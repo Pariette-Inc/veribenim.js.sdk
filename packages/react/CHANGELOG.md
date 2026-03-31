@@ -1,5 +1,16 @@
 # @veribenim/react
 
+## 4.0.0
+
+### Major Changes
+
+- readme
+
+### Patch Changes
+
+- Updated dependencies
+  - @veribenim/core@4.0.0
+
 ## 3.0.0
 
 ### Major Changes

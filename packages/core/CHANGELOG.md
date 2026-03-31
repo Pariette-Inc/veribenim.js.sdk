@@ -1,5 +1,11 @@
 # @veribenim/core
 
+## 4.0.0
+
+### Major Changes
+
+- readme
+
 ## 3.0.0
 
 ### Major Changes
