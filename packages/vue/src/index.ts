@@ -1,4 +1,4 @@
-import { ref, readonly, type App } from 'vue';
+import { ref, readonly, inject, type App } from 'vue';
 import { Veribenim, type VeribenimConfig, type ConsentPreferences } from '@veribenim/core';
 
 export type { VeribenimConfig, ConsentPreferences } from '@veribenim/core';
@@ -32,7 +32,6 @@ export const VeribenimPlugin = {
     const isLoaded = ref(false);
 
     const client = new Veribenim(config, {
-      onLoad: () => { isLoaded.value = true; },
       onAccept: (prefs) => { preferences.value = prefs; },
       onDecline: (prefs) => { preferences.value = prefs; },
       onChange: (prefs) => { preferences.value = prefs; },
@@ -41,6 +40,7 @@ export const VeribenimPlugin = {
     // Mevcut tercihleri yükle
     client.getPreferences().then((res) => {
       if (res) preferences.value = res.preferences;
+      isLoaded.value = true;
     });
 
     const state = {
@@ -96,7 +96,6 @@ export const VeribenimPlugin = {
  * Vue Composable
  */
 export function useVeribenim() {
-  const { inject } = require('vue');
   const state = inject(INJECTION_KEY);
   if (!state) {
     throw new Error('[Veribenim] useVeribenim() çağrısı VeribenimPlugin kurulmadan yapıldı');

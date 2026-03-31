@@ -35,7 +35,6 @@ export function VeribenimProvider({ config, children }: VeribenimProviderProps) 
 
   const client = useMemo(() => {
     return new Veribenim(config, {
-      onLoad: () => setIsLoaded(true),
       onAccept: (prefs) => setPreferences(prefs),
       onDecline: (prefs) => setPreferences(prefs),
       onChange: (prefs) => setPreferences(prefs),
@@ -47,6 +46,7 @@ export function VeribenimProvider({ config, children }: VeribenimProviderProps) 
     // Mevcut tercihleri yükle
     client.getPreferences().then((res) => {
       if (res) setPreferences(res.preferences);
+      setIsLoaded(true);
     });
   }, [client]);
 
