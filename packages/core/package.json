@@ -1,8 +1,14 @@
 {
   "name": "@veribenim/core",
-  "version": "0.1.0",
+  "version": "3.0.0",
   "description": "Veribenim KVKK/GDPR çerez onayı SDK - Core",
-  "keywords": ["kvkk", "gdpr", "cookie", "consent", "veribenim"],
+  "keywords": [
+    "kvkk",
+    "gdpr",
+    "cookie",
+    "consent",
+    "veribenim"
+  ],
   "homepage": "https://veribenim.com",
   "repository": {
     "type": "git",
@@ -20,7 +26,10 @@
       "require": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts --clean",
     "dev": "tsup src/index.ts --format cjs,esm --dts --watch",

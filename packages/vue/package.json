@@ -1,8 +1,16 @@
 {
   "name": "@veribenim/vue",
-  "version": "0.1.0",
+  "version": "3.0.0",
   "description": "Veribenim KVKK/GDPR çerez onayı SDK - Vue 3",
-  "keywords": ["kvkk", "gdpr", "cookie", "consent", "veribenim", "vue", "vue3"],
+  "keywords": [
+    "kvkk",
+    "gdpr",
+    "cookie",
+    "consent",
+    "veribenim",
+    "vue",
+    "vue3"
+  ],
   "license": "MIT",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -14,7 +22,10 @@
       "require": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts --clean",
     "dev": "tsup src/index.ts --format cjs,esm --dts --watch",

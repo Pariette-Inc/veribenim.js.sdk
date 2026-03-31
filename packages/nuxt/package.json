@@ -1,8 +1,16 @@
 {
   "name": "@veribenim/nuxt",
-  "version": "0.1.0",
+  "version": "3.0.0",
   "description": "Veribenim KVKK/GDPR çerez onayı SDK - Nuxt 3 Modülü",
-  "keywords": ["kvkk", "gdpr", "cookie", "consent", "veribenim", "nuxt", "nuxt3"],
+  "keywords": [
+    "kvkk",
+    "gdpr",
+    "cookie",
+    "consent",
+    "veribenim",
+    "nuxt",
+    "nuxt3"
+  ],
   "license": "MIT",
   "main": "./dist/module.cjs",
   "module": "./dist/module.mjs",
@@ -13,7 +21,10 @@
       "require": "./dist/module.cjs"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "nuxt-module-build build",
     "dev": "nuxt-module-build build --stub",
