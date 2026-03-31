@@ -1,0 +1,46 @@
+{
+  "name": "@veribenim/react",
+  "version": "0.1.0",
+  "description": "Veribenim KVKK/GDPR çerez onayı SDK - React",
+  "keywords": ["kvkk", "gdpr", "cookie", "consent", "veribenim", "react"],
+  "homepage": "https://veribenim.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pariette/veribenim.js.sdk",
+    "directory": "packages/react"
+  },
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup src/index.tsx --format cjs,esm --dts --clean",
+    "dev": "tsup src/index.tsx --format cjs,esm --dts --watch",
+    "test": "jest --passWithNoTests",
+    "lint": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@veribenim/core": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=17.0.0",
+    "react-dom": ">=17.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0"
+  }
+}
