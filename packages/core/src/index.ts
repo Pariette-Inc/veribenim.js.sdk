@@ -72,14 +72,8 @@ export class Veribenim {
     return this;
   }
 
-  /** Script yüklendiğinde çağrılır */
-  onLoad(callback: () => void): this {
-    this.callbacks.onLoad.push(callback);
-    return this;
-  }
-
-  /** Callback'leri tetikle (genellikle banner JS'i çağırır) */
-  emit(event: 'accept' | 'decline' | 'change' | 'load', prefs?: ConsentPreferences): void {
+  /** Callback'leri tetikle */
+  emit(event: 'accept' | 'decline' | 'change', prefs?: ConsentPreferences): void {
     switch (event) {
       case 'accept':
         this.callbacks.onAccept.forEach((cb) => prefs && cb(prefs));
@@ -89,9 +83,6 @@ export class Veribenim {
         break;
       case 'change':
         this.callbacks.onChange.forEach((cb) => prefs && cb(prefs));
-        break;
-      case 'load':
-        this.callbacks.onLoad.forEach((cb) => cb());
         break;
     }
   }
