@@ -16,7 +16,7 @@ export * from './types';
 export { VeribenimApiClient } from './client';
 
 const DEFAULT_CONFIG: Omit<VeribenimInternalConfig, 'token'> = {
-  apiUrl: 'https://api.veribenim.com',
+  apiUrl: 'https://live.veribenim.com',
   lang: 'tr',
   debug: false,
 };
@@ -45,7 +45,7 @@ export class Veribenim {
       token: config.token,
       lang: config.lang ?? 'tr',
       debug: config.debug ?? false,
-      apiUrl: config._apiUrl ?? 'https://api.veribenim.com',
+      apiUrl: config._apiUrl ?? 'https://live.veribenim.com',
     };
     this.api = new VeribenimApiClient(this.config);
 

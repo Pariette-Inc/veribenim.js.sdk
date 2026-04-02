@@ -36,7 +36,7 @@ export default defineNuxtModule<ModuleOptions>({
     lang: 'tr',
     autoLoad: true,
     debug: false,
-    apiUrl: 'https://api.veribenim.com',
+    apiUrl: 'https://live.veribenim.com',
     scriptUrl: 'https://bundles.veribenim.com/bundle.js',
   },
 

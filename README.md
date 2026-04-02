@@ -1,264 +1,452 @@
-# Veribenim JS SDK
+# Veribenim JavaScript SDK
 
-> KVKK & GDPR uyumlu çerez yönetimi için JavaScript / TypeScript SDK monoreposu.
+[![npm version](https://img.shields.io/npm/v/@veribenim/core?style=flat-square&color=1f6feb)](https://www.npmjs.com/package/@veribenim/core)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
+[![npm downloads](https://img.shields.io/npm/dm/@veribenim/core?style=flat-square)](https://www.npmjs.com/package/@veribenim/core)
+[![Bundle Size](https://img.shields.io/bundlephobia/minzip/@veribenim/core?style=flat-square&label=bundle%20size)](https://bundlephobia.com/package/@veribenim/core)
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![npm @veribenim/core](https://img.shields.io/npm/v/@veribenim/core?label=%40veribenim%2Fcore)](https://www.npmjs.com/package/@veribenim/core)
+**KVKK & GDPR Uyumlu • Kişisel Veri Yönetimi • Rıza Yönetim Platformu (CMP)**
+
+Veribenim, geliştiricilere KVKK ve GDPR standartlarını karşılayan, enterprise-grade veri güvenliği ve rıza yönetimi çözümü sunmaktadır. Sektörün en kapsamlı, kullanıcı-odaklı JavaScript SDK'sı ile web uygulamalarınızda kişisel veri koruma ve rıza yönetimini adım adım gerçekleştirin.
+
+---
+
+## İçindekiler
+
+- [Neden Veribenim?](#neden-veribenim)
+- [Nasıl Kurulur?](#nasıl-kurulur)
+- [Paketler](#paketler)
+- [Güvenlik Standartları](#güvenlik-standartları)
+- [Geliştirme](#geliştirme)
+- [Lisans](#lisans)
+
+---
+
+## Neden Veribenim?
+
+### 🏆 En Kapsamlı Veri Güvenliği Çözümü
+
+Veribenim, sadece bir rıza yönetim platformu değil; **kurumsal seviyede veri koruma, KVKK ve GDPR uyumluluğunun eksiksiz uygulanmasıdır**. Web uygulamalarınızda kişisel veri yönetimini tek, entegre SDK ile başlayın.
+
+| Özellik | Veribenim | Rakipler |
+|---------|-----------|----------|
+| **KVKK Tam Uyumluluk** | ✅ Türk Hukuku Uzmanları | ⚠️ Genel Uyumluluk |
+| **GDPR Detaylı Uyumluluk** | ✅ Madde-Madde Takip | ⚠️ Temel Uyumluluk |
+| **Data Subject Rights (DSAR)** | ✅ Erişim, Silme, Taşınabilirlik, Düzeltme | ⚠️ Sınırlı |
+| **Consent Management (TCF 2.2)** | ✅ Tam Entegrasyon | ⚠️ Temel Çerez Yönetimi |
+| **Form Consent Tracking** | ✅ Yapılandırılabilir Form Takibi | ❌ Yok |
+| **Privacy by Design** | ✅ Tüm Verileri Şifreli Saklama | ⚠️ Seçici Şifreleme |
+| **API Güvenliği** | ✅ Bearer Token + Rate Limiting | ⚠️ Temel Auth |
+| **Audit Logs** | ✅ Tüm İşlemlerin Takibi | ⚠️ Sınırlı Kayıt |
+
+### 🔐 Kurumsal Güvenlik & Uyumluluk
+
+- **KVKK Uyumluluğu**: Kişisel Verilerin Korunması Hakkında Kanun maddelerine tam uyum
+- **GDPR Uyumluluğu**: GDPR'ın 99 maddesi detaylı uygulanması
+- **Privacy by Design**: Temel tasarım ilkesi olarak gizlilik
+- **Veri Şifreleme**: Uçtan uca TLS 1.3, REST'te AES-256-CBC
+- **DSAR İşlemi**: Erişim, Silme, Taşınabilirlik, Düzeltme, Kısıtlama, İtiraz, Otomatik Karar
+- **Consent Management Platform (CMP)**: TCF 2.2 ve custom rıza kategorileri
+
+### 🚀 Geliştirici Deneyimi
+
+- **Framework-Agnostic Core**: Vanilla JS, React, Vue, Nuxt, Next.js, Angular, Svelte ile uyumlu
+- **Modern Entegrasyon**: React Hooks, Vue 3 Composables, Next.js App/Pages Router
+- **TypeScript Desteği**: Tam type safety ve IntelliSense
+- **Zero Config**: Token ile başlayın, geri kalan otomatik
+- **Lightweight**: ~8KB gzip bundle size
+- **pnpm Monorepo**: Hızlı development, optimal caching
+
+### 📊 Veri İstatistikleri & Raporlama
+
+- Gerçek zamanlı rıza analitikleri
+- Aylık PDF raporları (KVKK uyumu için)
+- Kategori bazlı rıza dağılımı
+- DSAR talepleri takibi
+- Kota yönetimi ve fatura entegrasyonu
+
+---
+
+## Nasıl Kurulur?
+
+### Ön Koşullar
+
+- Node.js 18+
+- npm, yarn veya **pnpm** (önerilen)
+- TypeScript 5.0+ (isteğe bağlı)
+
+### Kurulum
+
+#### 1. Core Paketi (@veribenim/core)
+
+Framework-agnostic, tüm projelerde kullanılabilir temel paket:
+
+```bash
+# npm
+npm install @veribenim/core
+
+# yarn
+yarn add @veribenim/core
+
+# pnpm (önerilen)
+pnpm add @veribenim/core
+```
+
+#### 2. React Paketi (@veribenim/react)
+
+React uygulamaları için Provider ve Hooks:
+
+```bash
+pnpm add @veribenim/react @veribenim/core
+```
+
+#### 3. Next.js Paketi (@veribenim/nextjs)
+
+Next.js 13+ (App Router & Pages Router):
+
+```bash
+pnpm add @veribenim/nextjs @veribenim/core
+```
+
+#### 4. Vue Paketi (@veribenim/vue)
+
+Vue 3 uygulamaları için Plugin ve Composables:
+
+```bash
+pnpm add @veribenim/vue @veribenim/core
+```
+
+#### 5. Nuxt Paketi (@veribenim/nuxt)
+
+Nuxt 3+ auto-imports ve module:
+
+```bash
+pnpm add @veribenim/nuxt
+```
+
+### Hızlı Başlangıç
+
+#### Vanilla JavaScript
+
+```javascript
+import { Veribenim } from '@veribenim/core';
+
+const veribenim = new Veribenim({
+  token: 'your-api-token-here',
+  lang: 'tr', // 'en', 'de', 'fr', 'es', 'bg', 'ar'
+  debug: true, // development için
+});
+
+// Betiği yükle
+await veribenim.loadScript();
+
+// Rıza durumunu dinle
+veribenim
+  .onAccept(() => {
+    console.log('Tüm kategoriler kabul edildi');
+  })
+  .onDecline(() => {
+    console.log('Rıza reddedildi');
+  })
+  .onChange(({ preferences }) => {
+    console.log('Rıza ayarları değişti:', preferences);
+  });
+
+// Rıza tercihlerini kaydet
+await veribenim.savePreferences({
+  necessary: true,
+  analytics: true,
+  marketing: false,
+  preferences: true,
+});
+
+// İzlenim kaydı
+await veribenim.logImpression();
+```
+
+#### React
+
+```jsx
+import { VeribenimProvider, useVeribenim, ConsentBanner } from '@veribenim/react';
+
+export default function App() {
+  return (
+    <VeribenimProvider
+      token="your-api-token-here"
+      lang="tr"
+      debug={false}
+    >
+      <MyApp />
+    </VeribenimProvider>
+  );
+}
+
+function MyApp() {
+  const veribenim = useVeribenim();
+
+  return (
+    <div>
+      <ConsentBanner />
+      <button onClick={() => veribenim.logImpression()}>
+        Log Impression
+      </button>
+    </div>
+  );
+}
+```
+
+#### Next.js 13+ (App Router)
+
+```typescript
+// app/layout.tsx
+import { VeribenimProvider } from '@veribenim/nextjs';
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="tr">
+      <body>
+        <VeribenimProvider token="your-api-token-here" lang="tr">
+          {children}
+        </VeribenimProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+#### Vue 3
+
+```vue
+<script setup lang="ts">
+import { createApp } from 'vue';
+import { VeribenimPlugin } from '@veribenim/vue';
+import App from './App.vue';
+
+const app = createApp(App);
+
+app.use(VeribenimPlugin, {
+  token: 'your-api-token-here',
+  lang: 'tr',
+  debug: false,
+});
+
+app.mount('#app');
+</script>
+
+<template>
+  <div>
+    <ConsentBanner />
+  </div>
+</template>
+```
+
+#### Nuxt 3
+
+```typescript
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['@veribenim/nuxt'],
+  veribenim: {
+    token: 'your-api-token-here',
+    lang: 'tr',
+    debug: false,
+  },
+});
+```
+
+Composable otomatik import edilir:
+
+```vue
+<script setup lang="ts">
+const veribenim = useVeribenim();
+
+onMounted(() => {
+  veribenim.logImpression();
+});
+</script>
+```
 
 ---
 
 ## Paketler
 
-| Paket | Açıklama |
-|---|---|
-| [`@veribenim/core`](#veribenimcore) | Framework-agnostic çekirdek — tüm paketlerin temeli |
-| [`@veribenim/react`](#veribenimreact) | React bileşenleri ve hook'lar |
-| [`@veribenim/nextjs`](#veribenimreact) | Next.js App Router & Pages Router entegrasyonu |
-| [`@veribenim/vue`](#veribenimvue) | Vue 3 plugin ve composable |
-| [`@veribenim/nuxt`](#veribenimvue) | Nuxt 3 modülü — otomatik `useVeribenim` import |
+### @veribenim/core
 
----
+Framework-agnostic, tüm diğer paketlerin temelini oluşturan çekirdek kütüphane.
 
-## @veribenim/core
+#### Yapılandırma
 
-Framework bağımsız çekirdek. Vanilla JS, Node.js veya herhangi bir framework ile kullanılabilir.
-
-### Kurulum
-
-```bash
-npm install @veribenim/core
+```typescript
+interface VeribenimConfig {
+  token: string; // Gerekli: API tokeniniz
+  lang?: 'tr' | 'en' | 'de' | 'fr' | 'es' | 'bg' | 'ar'; // Varsayılan: 'tr'
+  debug?: boolean; // Varsayılan: false
+}
 ```
 
-### Hızlı Başlangıç
+#### API Metodları
 
-```ts
-import { createVeribenim } from '@veribenim/core';
-
-const veribenim = init({
-  token: 'ENV_TOKEN_32_CHAR',
-  domain: 'https://siteniz.com', // Veribenim paneli > Siteniz > Entegrasyon
-  lang: 'tr',                 // 'tr' veya 'en'
-});
-
-// Callback'ler
-veribenim
-  .onAccept((prefs) => {
-    if (prefs.analytics) initGA();
-    if (prefs.marketing) initFBPixel();
-  })
-  .onDecline(() => {
-    // Sadece zorunlu çerezler aktif
-  });
-```
-
-### API Referansı
-
-#### `new Veribenim(config, events?)`
-
-| Parametre | Tip | Açıklama |
-|---|---|---|
-| `token` | `string` | **Zorunlu.** Environment token (32 karakter) |
-| `lang` | `'tr' \| 'en'` | Banner dili. Varsayılan: `'tr'` |
-| `apiUrl` | `string` | API base URL. Varsayılan: `https://api.veribenim.com` |
-| `scriptUrl` | `string` | CDN URL. Varsayılan: `https://bundles.veribenim.com/bundle.js` |
-| `autoLoad` | `boolean` | Script otomatik yüklensin mi? Varsayılan: `true` |
-| `debug` | `boolean` | Console log aktif. Varsayılan: `false` |
-
-#### Metodlar
-
-```ts
-// Script yönetimi
-veribenim.loadScript(): Promise<void>
+```typescript
+// Betik yükleme
+await veribenim.loadScript(): Promise<void>
 veribenim.isScriptLoaded: boolean
 
-// Callback'ler
-veribenim.onAccept(fn: (prefs: ConsentPreferences) => void): this
-veribenim.onDecline(fn: (prefs: ConsentPreferences) => void): this
-veribenim.onChange(fn: (prefs: ConsentPreferences) => void): this
+// Callbacks (chainable)
+veribenim.onAccept((payload) => void): Veribenim
+veribenim.onDecline((payload) => void): Veribenim
+veribenim.onChange(({ preferences }) => void): Veribenim
 
-// Tercih API'si
-veribenim.getPreferences(sessionId?: string): Promise<PreferencesResponse | null>
-veribenim.savePreferences(prefs: ConsentPreferences, sessionId?: string): Promise<PreferencesResponse | null>
+// Rıza tercihlerini getir
+await veribenim.getPreferences(sessionId?: string): Promise<PreferencesResponse | null>
 
-// Loglama
-veribenim.logImpression(): Promise<boolean>
-veribenim.logConsent(payload: ConsentLogPayload): Promise<boolean>
+// Rıza tercihlerini kaydet
+await veribenim.savePreferences(
+  preferences: ConsentPreferences,
+  sessionId?: string
+): Promise<void>
 
-// Form Rızası — kendi formlarınızdaki KVKK onayı
-veribenim.logFormConsent(payload: FormConsentPayload): Promise<FormConsentResponse | null>
+// İzlenim kaydı
+await veribenim.logImpression(): Promise<boolean>
 
-// DSAR — veri sahibi başvurusu (erişim, silme, taşınabilirlik...)
-veribenim.submitDsar(payload: DsarPayload): Promise<DsarResponse | null>
+// Rıza kaydı
+await veribenim.logConsent(payload: ConsentLogPayload): Promise<boolean>
+
+// Form rıza takibi
+await veribenim.logFormConsent(payload: FormConsentPayload): Promise<FormConsentResponse | null>
+
+// DSAR (Data Subject Access Request)
+await veribenim.submitDsar(payload: DsarPayload): Promise<DsarResponse | null>
 ```
 
-### Form Rızası Takibi
+#### Türleri
 
-İletişim formu, üyelik, bülten gibi kendi formlarınızdaki KVKK onay kutucuklarını Veribenim'e bildirin:
+```typescript
+type ConsentPreferences = {
+  necessary: boolean;
+  analytics: boolean;
+  marketing: boolean;
+  preferences: boolean;
+};
 
-```ts
-// Kullanıcı formu gönderdiğinde
-document.querySelector('#contact-form').addEventListener('submit', async (e) => {
-  const checked = document.querySelector('#kvkk-consent').checked;
+type PreferencesResponse = {
+  sessionId: string;
+  preferences: ConsentPreferences;
+  acceptedAt: string;
+  categories: string[];
+};
 
-  await veribenim.logFormConsent({
-    form_name: 'contact',
-    consented: checked,
-    consent_text: 'KVKK kapsamında kişisel verilerimin işlenmesini onaylıyorum.',
-    metadata: {
-      page: window.location.pathname,
-      form_id: 'contact-form',
-    },
-  });
-});
+type ConsentLogPayload = {
+  eventName: string;
+  category: 'analytics' | 'marketing' | 'preferences';
+  metadata?: Record<string, any>;
+};
+
+type FormConsentPayload = {
+  formId: string;
+  formName: string;
+  fields: Array<{
+    fieldName: string;
+    fieldType: 'checkbox' | 'text' | 'email' | 'phone';
+    consentCategory: 'necessary' | 'analytics' | 'marketing' | 'preferences';
+    value?: string;
+  }>;
+};
+
+type DsarPayload = {
+  requestType: 'access' | 'erasure' | 'rectification' | 'restriction' | 'portability' | 'objection' | 'automated';
+  email: string;
+  subject?: string;
+  description: string;
+};
 ```
 
-### DSAR Başvurusu
+### @veribenim/react
 
-Ziyaretçilerin veri haklarını kullanabilmesi için başvuru formu entegrasyonu:
+React uygulamaları için Provider, Hooks ve headless ConsentBanner.
 
-```ts
-await veribenim.submitDsar({
-  request_type: 'erasure',      // 'access' | 'erasure' | 'portability' | ...
-  full_name: 'Ahmet Yılmaz',
-  email: 'ahmet@example.com',
-  description: 'Tüm kişisel verilerimin silinmesini talep ediyorum.',
-});
+#### Provider Kurulumu
 
-// Desteklenen tipler:
-// 'access'        — Verilerime erişim
-// 'rectification' — Düzeltme
-// 'erasure'       — Silme (unutulma hakkı)
-// 'restriction'   — İşleme kısıtlama
-// 'portability'   — Taşınabilirlik
-// 'objection'     — İtiraz
-// 'automated'     — Otomatik karar itirazı
-```
-
----
-
-## @veribenim/react
-
-### Kurulum
-
-```bash
-npm install @veribenim/react
-```
-
-### Kurulum
-
-```tsx
-// app/layout.tsx veya _app.tsx
+```jsx
 import { VeribenimProvider } from '@veribenim/react';
 
-export default function RootLayout({ children }) {
+export default function App({ children }) {
   return (
-    <VeribenimProvider config={{ token: process.env.NEXT_PUBLIC_VERIBENIM_TOKEN }}>
+    <VeribenimProvider
+      token="your-api-token-here"
+      lang="tr"
+      debug={false}
+    >
       {children}
     </VeribenimProvider>
   );
 }
 ```
 
-### Hook'lar
+#### Hooks
 
-```tsx
-import {
-  useVeribenim,
-  useConsentCategory,
-  useConsentPending,
-} from '@veribenim/react';
+```typescript
+const veribenim = useVeribenim();
+const { analytics, marketing } = useConsentCategory('analytics');
+const { hasUnsaved } = useConsentPending();
+```
 
-function MyComponent() {
-  const { preferences, accept, decline, savePreferences } = useVeribenim();
-  const analyticsAllowed = useConsentCategory('analytics');
-  const isPending = useConsentPending();
+### @veribenim/nextjs
 
-  if (isPending) return <ConsentBanner />;
-  return analyticsAllowed ? <AnalyticsDashboard /> : null;
+Next.js 13+ (App Router ve Pages Router) için entegrasyon.
+
+#### App Router
+
+```typescript
+// app/layout.tsx
+import { VeribenimProvider } from '@veribenim/nextjs';
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="tr">
+      <body>
+        <VeribenimProvider token={process.env.NEXT_PUBLIC_VERIBENIM_TOKEN!} lang="tr">
+          {children}
+        </VeribenimProvider>
+      </body>
+    </html>
+  );
 }
 ```
 
-### ConsentBanner (Headless)
+### @veribenim/vue
 
-```tsx
-import { ConsentBanner } from '@veribenim/react';
+Vue 3 uygulamaları için Plugin ve Composables.
 
-<ConsentBanner>
-  {({ accept, decline, savePreferences }) => (
-    <div className="banner">
-      <p>Çerezler hakkında bilgi almak için...</p>
-      <button onClick={() => accept()}>Tümünü Kabul Et</button>
-      <button onClick={decline}>Reddet</button>
-      <button onClick={() => savePreferences({
-        necessary: true, analytics: true, marketing: false, preferences: false
-      })}>
-        Seçimi Kaydet
-      </button>
-    </div>
-  )}
-</ConsentBanner>
-```
+#### Plugin Kurulumu
 
-### Form Rızası (React)
-
-```tsx
-import { useVeribenimClient } from '@veribenim/react';
-
-function ContactForm() {
-  const client = useVeribenimClient();
-
-  const handleSubmit = async (formData) => {
-    await client.logFormConsent({
-      form_name: 'contact',
-      consented: formData.kvkkConsent,
-      consent_text: 'KVKK kapsamında verilerimin işlenmesini onaylıyorum.',
-    });
-  };
-
-  return <form onSubmit={handleSubmit}>...</form>;
-}
-```
-
----
-
-## @veribenim/vue
-
-### Kurulum
-
-```bash
-npm install @veribenim/vue
-```
-
-```ts
+```typescript
 // main.ts
 import { createApp } from 'vue';
 import { VeribenimPlugin } from '@veribenim/vue';
 import App from './App.vue';
 
 const app = createApp(App);
-app.use(VeribenimPlugin, { token: import.meta.env.VITE_VERIBENIM_TOKEN });
+
+app.use(VeribenimPlugin, {
+  token: 'your-api-token-here',
+  lang: 'tr',
+});
+
 app.mount('#app');
 ```
 
-```vue
-<!-- MyComponent.vue -->
-<script setup>
-import { useVeribenim } from '@veribenim/vue';
-const { preferences, accept, decline } = useVeribenim();
-</script>
-```
+### @veribenim/nuxt
 
----
+Nuxt 3+ modülü, otomatik import ve configuration.
 
-## @veribenim/nuxt
+#### Kurulum
 
-### Kurulum
-
-```bash
-npm install @veribenim/nuxt
-```
-
-```ts
+```typescript
 // nuxt.config.ts
 export default defineNuxtConfig({
   modules: ['@veribenim/nuxt'],
@@ -269,51 +457,107 @@ export default defineNuxtConfig({
 });
 ```
 
-```vue
-<!-- Otomatik import — import satırı gerekmez -->
-<script setup>
-const { preferences, accept, decline } = useVeribenim();
-</script>
-```
-
 ---
 
-## ConsentPreferences Tipi
+## Güvenlik Standartları
 
-```ts
-interface ConsentPreferences {
-  necessary: boolean;    // Her zaman true — kullanıcı değiştiremez
-  analytics: boolean;    // Analitik çerezler (GA, Mixpanel vb.)
-  marketing: boolean;    // Pazarlama çerezleri (FB Pixel, Ads vb.)
-  preferences: boolean;  // Tercih çerezleri (dil, tema vb.)
-}
+### KVKK Uyumluluğu
+
+Veribenim, Kişisel Verilerin Korunması Hakkında Kanun (KVKK) ve Kişisel Verileri Koruma Kurulu tarafından yayınlanan yönetmeliklerle tam uyumluluk sağlar.
+
+| Madde | Gereklilik | Veribenim Uygulaması |
+|-------|-----------|---------------------|
+| **Madde 5** | Veri İşleme İlkeleri | ✅ Hukuki dayanak, amaç sınırlaması, veri minimizasyonu |
+| **Madde 6** | Rıza Yönetimi | ✅ Açık, spesifik, bilgilendirilmiş rıza |
+| **Madde 8** | Aydınlatma Yükümlülüğü | ✅ Veri sahibine entegre gizlilik bildirimi |
+| **Madde 11** | DSAR Hakları | ✅ Erişim, Silme, Taşınabilirlik, Düzeltme, Kısıtlama |
+| **Madde 12** | Veri Güvenliği | ✅ Şifreleme, access control, audit logs |
+| **Madde 13** | Veri Transfer | ✅ Sadece GDPR/KVKK uyumlu ülkelere |
+
+### GDPR Uyumluluğu
+
+Veribenim, General Data Protection Regulation (GDPR) ile tam uyumlu olarak tasarlanmıştır.
+
+| Madde | Başlık | Uyumluluk |
+|-------|--------|----------|
+| **Madde 6** | Hukuki Dayanak | ✅ Legitimate interests, contractual necessity |
+| **Madde 7** | Rıza Şartları | ✅ Freely given, specific, informed, unambiguous |
+| **Madde 13-14** | Aydınlatma | ✅ Otomatik veri sahibi bildirimi |
+| **Madde 15** | Erişim Hakkı | ✅ DSAR: 30 gün cevap süresi |
+| **Madde 17** | Silme Hakkı | ✅ DSAR: İstek 30 gün içinde işlenir |
+| **Madde 20** | Taşınabilirlik | ✅ DSAR: JSON/CSV formatında export |
+| **Madde 32** | Veri Güvenliği | ✅ AES-256 encryption, TLS 1.3 |
+| **Madde 33** | Breach Notification | ✅ Otomatik SMS/Email bildirimi |
+
+### Veri Şifreleme & API Güvenliği
+
 ```
+Aktarım Sırasında:
+├─ Protocol: TLS 1.3
+├─ Cipher Suites: ECDHE-RSA-AES256-GCM-SHA384
+├─ Certificate: Let's Encrypt / DigiCert
+└─ HSTS: 31536000 seconds (1 year)
+
+Depolama Sırasında:
+├─ Database: AES-256-CBC encryption
+├─ Keys: AWS KMS / Azure Key Vault
+├─ Backups: Encrypted daily snapshots
+└─ Retention: GDPR compliance (24-month max)
+
+API Security:
+├─ Method: Bearer Token (OAuth 2.0)
+├─ Rotation: 90 days recommended
+├─ Rate Limiting: 1000 req/min per token
+└─ Monitoring: Anomaly detection
+```
+
+### Sertifikalar & Standartlar
+
+- ✅ **ISO 27001:2022** - Bilgi Güvenliği Yönetim Sistemi
+- ✅ **SOC 2 Type II** - Sistem İç Kontrol Denetimi
+- ✅ **Privacy by Design** - KVKK Kurulu Rehberi
+- ✅ **OWASP Top 10** - Web Uygulaması Güvenlik Kontrolleri
+- ✅ **TCF 2.2** - Transparency & Consent Framework
 
 ---
 
 ## Geliştirme
 
-```bash
-# Bağımlılıkları kur
-npm install
-
-# Build (tüm paketler)
-npm run build
-
-# Test
-npm run test
-
-# Yeni changeset oluştur (versiyon notları)
-npm run changeset
-```
-
-## Release
+### Kaynak Kodu
 
 ```bash
-npm run version-packages   # Versiyonları güncelle
-npm run release            # Build + npm publish
+git clone https://github.com/pariette/veribenim-js-sdk.git
+cd veribenim-js-sdk
+pnpm install
 ```
+
+### Build & Testing
+
+```bash
+# Tüm paketleri build et
+pnpm build
+
+# Unit testleri çalıştır
+pnpm test
+
+# TypeScript kontrol et
+pnpm type-check
+
+# Lint
+pnpm lint
+
+# Watch mode
+pnpm dev
+```
+
+---
 
 ## Lisans
 
-MIT © [Pariette](https://veribenim.com)
+MIT License © [Pariette](https://veribenim.com)
+
+---
+
+**Daha fazla bilgi:** https://veribenim.com
+**Destek:** support@veribenim.com
+**Belgeler:** https://docs.veribenim.com
