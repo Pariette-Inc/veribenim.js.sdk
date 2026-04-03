@@ -1,5 +1,16 @@
 # @veribenim/react
 
+## 5.0.0
+
+### Major Changes
+
+- url fix
+
+### Patch Changes
+
+- Updated dependencies
+  - @veribenim/core@5.0.0
+
 ## 4.0.0
 
 ### Major Changes

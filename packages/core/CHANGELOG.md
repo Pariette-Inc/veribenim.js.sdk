@@ -1,5 +1,11 @@
 # @veribenim/core
 
+## 5.0.0
+
+### Major Changes
+
+- url fix
+
 ## 4.0.0
 
 ### Major Changes
