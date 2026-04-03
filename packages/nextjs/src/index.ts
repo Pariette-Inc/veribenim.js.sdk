@@ -55,10 +55,9 @@ export type {
  * Next.js Script bileşeni ile script yükleme için helper
  * next/script kullanarak banner scriptini yükler
  */
-export function getVeribenimScriptProps(token: string, lang: 'tr' | 'en' = 'tr') {
+export function getVeribenimScriptProps(src: string) {
   return {
-    src: `https://bundles.veribenim.com/bundle.js?token=${token}&lang=${lang}`,
+    src,
     strategy: 'afterInteractive' as const,
-    'data-veribenim': token,
   };
 }
