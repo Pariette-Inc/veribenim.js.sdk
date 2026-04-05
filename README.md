@@ -66,6 +66,30 @@ Veribenim, sadece bir rıza yönetim platformu değil; **kurumsal seviyede veri 
 - DSAR talepleri takibi
 - Kota yönetimi ve fatura entegrasyonu
 
+### 🏢 Uçtan Uca KVKK Yönetim Platformu
+
+Veribenim sadece bir çerez SDK'sı değil, **tam kapsamlı bir KVKK/GDPR uyum yönetim platformu**dur. SDK üzerinden erişilebilen ve dashboard'dan yönetilen platform özellikleri:
+
+| Modül | Açıklama |
+|-------|----------|
+| **Veri Envanteri** | KVKK Md.16 / GDPR Md.30: Departman ve süreç bazlı veri haritalama, 20 veri kategorisi, 6 hukuki dayanak, yurt dışı aktarım takibi, VERBİS uyumlu export |
+| **Saklama-İmha Otomasyonu** | KVKK Md.7 / GDPR Md.17: Saklama politikaları, otomatik imha, imha tutanakları, 5 imha yöntemi |
+| **Risk Yönetimi** | KVKK Md.12 / GDPR Md.35: 5x5 risk matrisi, 7 risk kategorisi, aksiyon takibi, risk raporu export |
+| **İç Denetim & Aksiyon Takibi** | 6 denetim tipi, 0-100 puanlama, aksiyon atama ve gecikme takibi |
+| **Doküman Şablonları** | 10 hazır KVKK/GDPR şablonu, değişken sistemi, çoklu dil, versiyon takibi |
+| **Rıza Versiyonlama** | Onay metni versiyon takibi, yeniden onay mekanizması, versiyon karşılaştırma |
+| **Veri Hakkı Talepleri (DSAR)** | KVKK Md.11 / GDPR Md.15-22: Erişim, silme, düzeltme, kısıtlama, taşınabilirlik, itiraz, otomatik karar — 7 talep tipi, otomatik 30 gün deadline |
+| **Veri İhlali Yönetimi** | GDPR Md.33: 72 saat countdown, risk seviyesi (düşük-kritik), durum akışı, otorite bildirim kaydı, etkilenen veri kategorileri |
+| **VERBİS / RoPA Export** | KVKK VERBİS kaydı ve GDPR Md.30 RoPA formatında CSV/JSON export — 17 alan, otomatik haritalama |
+| **Politika Yönetimi** | Gizlilik politikası, çerez politikası, KVKK aydınlatma, veri işleme sözleşmesi — çoklu dil, WYSIWYG, PDF/HTML export |
+| **Uyumluluk Skoru** | 17 kural, 5 kategori, A-F notlandırma — banner, çerez, hukuki metinler, teknik güvenlik, veri hakları |
+| **Form Rızası Takibi** | İletişim, üyelik, bülten formlarındaki KVKK onayını API ile kayıt altına alma |
+| **Webhook Sistemi** | 7 olay tipi (consent, DSAR, breach), HMAC-SHA256 imzalama, Slack/Teams/n8n entegrasyonu |
+| **Çerez Tarayıcı** | 50+ bilinen tracker otomatik tespiti (GA, Meta Pixel, Hotjar vb.) |
+| **Site Sağlık Kontrolü** | 7 faktörlü KVKK uyumluluk taraması (SSL, banner, politika, tracker, DPO bilgisi) |
+| **Tercih Merkezi** | Ziyaretçilerin çerez tercihlerini her zaman değiştirebildiği kalıcı panel + DSAR entegrasyonu |
+| **AI Asistan** | RAG tabanlı KVKK/GDPR bilgi asistanı (Gemini entegrasyonu) |
+
 ---
 
 ## Nasıl Kurulur?
