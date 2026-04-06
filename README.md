@@ -82,13 +82,19 @@ Veribenim sadece bir çerez SDK'sı değil, **tam kapsamlı bir KVKK/GDPR uyum y
 | **Veri İhlali Yönetimi** | GDPR Md.33: 72 saat countdown, risk seviyesi (düşük-kritik), durum akışı, otorite bildirim kaydı, etkilenen veri kategorileri |
 | **VERBİS / RoPA Export** | KVKK VERBİS kaydı ve GDPR Md.30 RoPA formatında CSV/JSON export — 17 alan, otomatik haritalama |
 | **Politika Yönetimi** | Gizlilik politikası, çerez politikası, KVKK aydınlatma, veri işleme sözleşmesi — çoklu dil, WYSIWYG, PDF/HTML export |
-| **Uyumluluk Skoru** | 17 kural, 5 kategori, A-F notlandırma — banner, çerez, hukuki metinler, teknik güvenlik, veri hakları |
+| **Uyumluluk Skoru** | 22 kural, 5 kategori, A-F notlandırma — banner, çerez, hukuki metinler, teknik güvenlik, veri hakları |
 | **Form Rızası Takibi** | İletişim, üyelik, bülten formlarındaki KVKK onayını API ile kayıt altına alma |
 | **Webhook Sistemi** | 7 olay tipi (consent, DSAR, breach), HMAC-SHA256 imzalama, Slack/Teams/n8n entegrasyonu |
 | **Çerez Tarayıcı** | 50+ bilinen tracker otomatik tespiti (GA, Meta Pixel, Hotjar vb.) |
 | **Site Sağlık Kontrolü** | 7 faktörlü KVKK uyumluluk taraması (SSL, banner, politika, tracker, DPO bilgisi) |
 | **Tercih Merkezi** | Ziyaretçilerin çerez tercihlerini her zaman değiştirebildiği kalıcı panel + DSAR entegrasyonu |
 | **AI Asistan** | RAG tabanlı KVKK/GDPR bilgi asistanı (Gemini entegrasyonu) |
+| **Meşru Menfaat Değerlendirmesi (LIA)** | KVK Kurul rehberi uyumlu 3-adım balans testi: Amaç → Zorunluluk → Dengeleme; passed/failed/pending sonuç |
+| **VERBİS Kaydı** | KVKK Md.16: Veri işleme aktivitesi kayıt asistanı, exemption check, otomatik export |
+| **Rıza Yenileme** | KVK Kurul Çerez Rehberi 2022: 12 aylık yenileme, banner_settings entegrasyonu, `consent_renewal_required` API flag |
+| **Rızayı Geri Çekme** | KVKK Md.11/1-e: `withdraw` aksiyonu, audit trail ile ispat yükümlülüğü, webhook tetikleyici |
+| **Veri Saklama & İmha** | KVKK Md.7: Ortam bazlı saklama süreleri (rıza/log/izlenim), otomatik periyodik imha, `data:purge-expired` |
+| **Çerez Duvarı Koruması** | KVK Kurul kararı: Cookie wall yasağı kontrolü, compliance score kuralı (ağırlık 12) |
 
 ---
 
@@ -343,6 +349,9 @@ await veribenim.logConsent(payload: ConsentLogPayload): Promise<boolean>
 // Form rıza takibi
 await veribenim.logFormConsent(payload: FormConsentPayload): Promise<FormConsentResponse | null>
 
+// Rızayı geri çekme (KVKK Md.11/1-e)
+await veribenim.withdrawConsent(sessionId: string): Promise<boolean>
+
 // DSAR (Data Subject Access Request)
 await veribenim.submitDsar(payload: DsarPayload): Promise<DsarResponse | null>
 ```
@@ -479,6 +488,72 @@ export default defineNuxtConfig({
     lang: 'tr',
   },
 });
+```
+
+---
+
+## Yeni KVKK Özellikleri (Nisan 2026)
+
+### Rızayı Geri Çekme — KVKK Md.11/1-e
+
+KVKK, rızayı geri çekmenin rıza vermek kadar kolay olmasını zorunlu kılar. `withdraw` aksiyonu ile tüm consent kaydı silinir, audit trail korunur:
+
+```typescript
+import { Veribenim } from '@veribenim/core';
+
+const veribenim = new Veribenim({ token: 'your-token' });
+
+// Kullanıcı "Tüm izinleri geri çek" düğmesine tıkladığında
+await veribenim.withdrawConsent(sessionId);
+
+// React ile
+function PreferenceCenter() {
+  const veribenim = useVeribenim();
+
+  const handleWithdraw = async () => {
+    await veribenim.withdrawConsent();
+    // Tüm analitik/pazarlama scriptlerini durdur
+  };
+
+  return <button onClick={handleWithdraw}>Tüm İzinleri Geri Çek</button>;
+}
+```
+
+### Rıza Yenileme — KVK Kurul Çerez Rehberi 2022
+
+12 aylık rıza yenileme zorunluluğu. API, `consent_renewal_required: true` döndürdüğünde banner yeniden gösterilir:
+
+```typescript
+// @veribenim/core otomatik yönetir.
+// Banner ayarlarında consent_validity_days <= 365 olmalı.
+
+veribenim.onRenewalRequired(() => {
+  // Banner yeniden göster
+  veribenim.showBanner();
+});
+```
+
+### Çerez Duvarı Koruması
+
+KVK Kurul kararına göre çerez duvarı (cookie wall) yasaktır. Veribenim bunu compliance score'da ağırlık 12 kuralıyla denetler:
+
+```typescript
+// banner_settings'de cookie_wall_enabled: true ise compliance skoru düşer
+// Doğru yapılandırma:
+const bannerSettings = {
+  cookie_wall_enabled: false, // Her zaman false olmalı
+  // ...
+};
+```
+
+### Meşru Menfaat Değerlendirmesi (LIA)
+
+```typescript
+// Console dashboard üzerinden 3-adım balans testi yapılır:
+// 1. Amaç Testi — Meşru menfaat var mı?
+// 2. Zorunluluk Testi — Daha az müdahaleci alternatif?
+// 3. Dengeleme Testi — Veri sahibinin hakları ağır basıyor mu?
+// Sonuç: passed / failed / pending
 ```
 
 ---
