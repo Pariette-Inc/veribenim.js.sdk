@@ -183,7 +183,6 @@ export class FormRenderer {
   private renderField(field: FormField): HTMLElement | null {
     const wrapper = document.createElement('div');
     wrapper.className = 'vb-field';
-    wrapper.dataset.fieldUuid = field.uuid;
 
     if (field.type === 'divider') {
       const hr = document.createElement('hr');
