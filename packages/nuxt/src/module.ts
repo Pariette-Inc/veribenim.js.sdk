@@ -33,11 +33,11 @@ export default defineNuxtModule<ModuleOptions>({
 
   defaults: {
     token: '',
+    domain: '',
     lang: 'tr',
     autoLoad: true,
     debug: false,
     apiUrl: 'https://live.veribenim.com',
-    scriptUrl: 'https://bundles.veribenim.com/bundle.js',
   },
 
   setup(options, nuxt) {
@@ -48,9 +48,9 @@ export default defineNuxtModule<ModuleOptions>({
     // Runtime config'e token'ı ekle
     nuxt.options.runtimeConfig.public.veribenim = {
       token: options.token,
+      domain: options.domain,
       lang: options.lang,
       apiUrl: options.apiUrl,
-      scriptUrl: options.scriptUrl,
       autoLoad: options.autoLoad,
       debug: options.debug,
     };

@@ -1,0 +1,30 @@
+import type { VeribenimInternalConfig, FormSchema, RenderFormOptions } from './types';
+import { VeribenimApiClient } from './client';
+export declare class FormRenderer {
+    private client;
+    private schema;
+    private container;
+    private options;
+    private currentStep;
+    private fieldValues;
+    private styleId;
+    constructor(client: VeribenimApiClient, schema: FormSchema, container: HTMLElement, options: RenderFormOptions);
+    static render(config: VeribenimInternalConfig, slug: string, selector: string, options?: RenderFormOptions): Promise<void>;
+    private mount;
+    private injectStyles;
+    private render;
+    private getCurrentFields;
+    private renderStepIndicator;
+    private renderField;
+    private createInputElement;
+    private renderNavigation;
+    private renderBadge;
+    private attachFieldListeners;
+    private evaluateCondition;
+    private updateConditionalFields;
+    private validateCurrentStep;
+    private getFieldValue;
+    private collectAllData;
+    private handleSubmit;
+    private showSuccess;
+}

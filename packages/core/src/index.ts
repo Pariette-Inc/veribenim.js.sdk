@@ -10,10 +10,44 @@ import type {
   FormConsentResponse,
   DsarPayload,
   DsarResponse,
+  FieldType,
+  FieldOption,
+  ConditionalCondition,
+  ConditionalLogic,
+  FormField,
+  FormStep,
+  FormSchema,
+  FormSubmitPayload,
+  FormSubmitResponse,
+  RenderFormOptions,
 } from './types';
 
 export * from './types';
+export type {
+  VeribenimConfig,
+  VeribenimInternalConfig,
+  VeribenimEvents,
+  ConsentPreferences,
+  ConsentLogPayload,
+  PreferencesResponse,
+  FormConsentPayload,
+  FormConsentResponse,
+  DsarPayload,
+  DsarResponse,
+  FieldType,
+  FieldOption,
+  ConditionalCondition,
+  ConditionalLogic,
+  FormField,
+  FormStep,
+  FormSchema,
+  FormSubmitPayload,
+  FormSubmitResponse,
+  RenderFormOptions,
+};
 export { VeribenimApiClient } from './client';
+export { FormRenderer } from './form-renderer';
+export { ScriptLoader, cleanDomainForFilename, getBundleUrl } from './loader';
 
 const DEFAULT_CONFIG: Omit<VeribenimInternalConfig, 'token'> = {
   apiUrl: 'https://live.veribenim.com',
@@ -43,9 +77,11 @@ export class Veribenim {
     this.config = {
       ...DEFAULT_CONFIG,
       token: config.token,
+      domain: config.domain,
       lang: config.lang ?? 'tr',
       debug: config.debug ?? false,
       apiUrl: config._apiUrl ?? 'https://live.veribenim.com',
+      scriptUrl: config._scriptUrl,
     };
     this.api = new VeribenimApiClient(this.config);
 
@@ -113,6 +149,18 @@ export class Veribenim {
   }
 
   /**
+   * Belirtilen kategori için ziyaretçi izni var mı?
+   * @param category - 'analytics' | 'marketing' | 'functional' | 'necessary'
+   * @param sessionId - Opsiyonel session ID
+   */
+  async hasConsent(category: keyof ConsentPreferences, sessionId?: string): Promise<boolean> {
+    const prefs = await this.api.getPreferences(sessionId);
+    if (!prefs) return false;
+    const consents = (prefs as any).consents ?? prefs.preferences;
+    return !!(consents as ConsentPreferences)[category];
+  }
+
+  /**
    * Form rızasını kaydet (iletişim formu, üyelik, bülten vb.)
    * POST /api/form-consents/{token}
    */
@@ -126,6 +174,43 @@ export class Veribenim {
    */
   submitDsar(payload: DsarPayload): Promise<DsarResponse | null> {
     return this.api.submitDsar(payload);
+  }
+
+  /**
+   * Form şemasını yükle
+   * GET /api/public/forms/{token}/{slug}
+   */
+  getFormSchema(slug: string): Promise<FormSchema> {
+    return this.api.getFormSchema(slug);
+  }
+
+  /**
+   * Form verilerini gönder
+   * POST /api/public/forms/{token}/{slug}
+   */
+  submitForm(slug: string, data: FormSubmitPayload): Promise<FormSubmitResponse> {
+    return this.api.submitForm(slug, data);
+  }
+
+  /**
+   * Form'u bir DOM elementine render et
+   * @param slug Form slug'ı
+   * @param selector CSS selector
+   * @param options Render seçenekleri
+   *
+   * @example
+   * const veribenim = new Veribenim({ token: 'ENV_TOKEN' });
+   * await veribenim.renderForm('contact-form', '#form-container', {
+   *   theme: { primaryColor: '#6366f1' },
+   *   onSuccess: (data) => console.log('Form submitted!'),
+   * });
+   */
+  renderForm(
+    slug: string,
+    selector: string,
+    options: RenderFormOptions = {}
+  ): Promise<void> {
+    return this.api.renderForm(slug, selector, options);
   }
 }
 

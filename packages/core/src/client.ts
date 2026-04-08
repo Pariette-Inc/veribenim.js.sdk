@@ -8,7 +8,12 @@ import type {
   FormConsentResponse,
   DsarPayload,
   DsarResponse,
+  FormSchema,
+  FormSubmitPayload,
+  FormSubmitResponse,
+  RenderFormOptions,
 } from './types';
+import { FormRenderer } from './form-renderer';
 
 export class VeribenimApiClient {
   constructor(private readonly config: VeribenimInternalConfig) {}
@@ -151,5 +156,83 @@ export class VeribenimApiClient {
       `/api/dsar/${this.config.token}`,
       payload
     );
+  }
+
+  /**
+   * Form şemasını yükle
+   * GET /api/public/forms/{token}/{slug}?lang=...
+   * @param slug Form slug'ı
+   * @param lang Dil kodu (tr, en, de, fr, es, bg, ar). Belirtilmezse environment dili kullanılır.
+   */
+  async getFormSchema(slug: string, lang?: string): Promise<FormSchema> {
+    const qs = lang ? `?lang=${encodeURIComponent(lang)}` : '';
+    const response = await fetch(
+      `${this.baseUrl}/api/public/forms/${this.config.token}/${slug}${qs}`,
+      {
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+    if (!response.ok) {
+      throw new Error(`Form bulunamadı: ${response.statusText}`);
+    }
+    return response.json();
+  }
+
+  /**
+   * Form verilerini gönder
+   * POST /api/public/forms/{token}/{slug}
+   */
+  async submitForm(slug: string, data: FormSubmitPayload): Promise<FormSubmitResponse> {
+    // File olan field'lar varsa FormData kullan, yoksa JSON
+    const hasFiles = Object.values(data).some(
+      (v) => v instanceof File || v instanceof FileList
+    );
+
+    let body: FormData | string;
+    let headers: HeadersInit = {};
+
+    if (hasFiles) {
+      const formData = new FormData();
+      for (const [key, value] of Object.entries(data)) {
+        if (value instanceof FileList) {
+          for (let i = 0; i < value.length; i++) {
+            formData.append(`${key}[]`, value[i]);
+          }
+        } else if (value instanceof File) {
+          formData.append(key, value);
+        } else if (value !== null && value !== undefined) {
+          formData.append(key, String(value));
+        }
+      }
+      body = formData;
+    } else {
+      headers['Content-Type'] = 'application/json';
+      body = JSON.stringify(data);
+    }
+
+    const response = await fetch(
+      `${this.baseUrl}/api/public/forms/${this.config.token}/${slug}`,
+      { method: 'POST', headers, body }
+    );
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || 'Form gönderilemedi');
+    }
+    return response.json();
+  }
+
+  /**
+   * Form'u bir DOM elementine render et
+   * @param slug Form slug'ı
+   * @param selector CSS selector
+   * @param options Render seçenekleri
+   */
+  async renderForm(
+    slug: string,
+    selector: string,
+    options: RenderFormOptions = {}
+  ): Promise<void> {
+    return FormRenderer.render(this.config, slug, selector, options);
   }
 }

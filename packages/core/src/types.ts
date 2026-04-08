@@ -24,14 +24,19 @@ export interface VeribenimConfig {
    * Panelde: Siteniz → Entegrasyon → Token
    */
   token: string;
+  /**
+   * Site domain'i — Bundle script URL'ini oluşturmak için kullanılır.
+   * Örn: 'claude.com', 'https://www.example.com'
+   * Belirtilirse script URL: https://bundles.veribenim.com/{cleanDomain}.js
+   */
+  domain?: string;
   /** Banner dili. Varsayılan: 'tr' */
   lang?: 'tr' | 'en';
   /** Debug modu. Varsayılan: false */
   debug?: boolean;
   /**
    * @internal — Yalnızca ileri düzey kullanım.
-   * SDK normalde yalnızca API işlemleri için kullanılır;
-   * banner script'i doğrudan <script> tag ile eklenir.
+   * Tam script URL'i. domain yerine bunu kullanarak override edebilirsiniz.
    */
   _scriptUrl?: string;
   /** @internal */
@@ -40,9 +45,11 @@ export interface VeribenimConfig {
 
 export interface VeribenimInternalConfig {
   token: string;
+  domain?: string;
   apiUrl: string;
   lang: 'tr' | 'en';
   debug: boolean;
+  scriptUrl?: string;
 }
 
 export interface ImpressionPayload {
@@ -127,4 +134,109 @@ export interface DsarResponse {
   status: 'pending' | 'in_progress' | 'resolved' | 'rejected' | 'cancelled';
   deadline: string; // ISO8601 — 30 günlük yasal süre
   created_at: string;
+}
+
+// -------------------------------------------------------------------------
+// Form Generator
+// -------------------------------------------------------------------------
+
+export type FieldType =
+  | 'input'
+  | 'number'
+  | 'email'
+  | 'phone'
+  | 'textarea'
+  | 'dropdown'
+  | 'radio'
+  | 'checkbox'
+  | 'file'
+  | 'date'
+  | 'rating'
+  | 'consent'
+  | 'divider'
+  | 'heading';
+
+export interface FieldOption {
+  label: string;
+  value: string;
+}
+
+export interface ConditionalCondition {
+  field_uuid: string;
+  operator: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'is_empty' | 'is_not_empty';
+  value: string;
+}
+
+export interface ConditionalLogic {
+  action: 'show' | 'hide';
+  logic: 'and' | 'or';
+  conditions: ConditionalCondition[];
+}
+
+export interface FormField {
+  uuid: string;
+  type: FieldType;
+  label: string;
+  placeholder?: string;
+  help_text?: string;
+  required: boolean;
+  options?: FieldOption[];
+  validation?: {
+    min?: number;
+    max?: number;
+    min_length?: number;
+    max_length?: number;
+    file_types?: string[];
+    max_file_size?: number;
+  };
+  conditional_logic?: ConditionalLogic;
+  settings?: Record<string, any>;
+  order: number;
+  form_step_id?: number | null;
+}
+
+export interface FormStep {
+  id: number;
+  order: number;
+  title?: string;
+  description?: string;
+  fields?: FormField[];
+}
+
+export interface FormSchema {
+  id: number;
+  name: string;
+  slug: string;
+  type: 'single_step' | 'multi_step';
+  steps: FormStep[];
+  fields: FormField[];
+  settings?: {
+    submit_button_text?: string;
+    success_title?: string;
+    success_message?: string;
+    redirect_url?: string;
+  };
+}
+
+export interface FormSubmitPayload {
+  [fieldUuid: string]: string | string[] | number | File | FileList | null;
+}
+
+export interface FormSubmitResponse {
+  message: string;
+  success_title?: string;
+  success_message?: string;
+}
+
+export interface RenderFormOptions {
+  theme?: {
+    primaryColor?: string;
+    fontFamily?: string;
+    borderRadius?: string;
+  };
+  onSuccess?: (data: FormSubmitResponse) => void;
+  onError?: (error: Error) => void;
+  locale?: 'tr' | 'en';
+  /** Form label/placeholder dilini belirler. API'den o dilde çözümlenmiş schema döner. */
+  lang?: string;
 }
