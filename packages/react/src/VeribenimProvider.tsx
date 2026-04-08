@@ -42,6 +42,13 @@ export function VeribenimProvider({ config, children }: VeribenimProviderProps) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config.token]);
 
+  // Bundle script'i otomatik yükle (domain veya _scriptUrl varsa)
+  useEffect(() => {
+    client.loadScript().catch(() => {
+      // domain veya scriptUrl yoksa sessizce geç
+    });
+  }, [client]);
+
   useEffect(() => {
     // Mevcut tercihleri yükle
     client.getPreferences().then((res) => {

@@ -1,6 +1,6 @@
 {
   "name": "@veribenim/vue",
-  "version": "5.0.0",
+  "version": "5.1.1",
   "description": "Veribenim KVKK/GDPR çerez onayı SDK - Vue 3",
   "keywords": [
     "kvkk",

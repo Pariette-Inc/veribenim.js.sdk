@@ -36,6 +36,7 @@
 // Next.js için 'use client' direktifi ile tüm React bileşenlerini re-export ediyoruz
 export {
   VeribenimProvider,
+  VeribenimForm,
   ConsentBanner,
   useVeribenim,
   useConsentCategory,
@@ -45,6 +46,7 @@ export {
 
 export type {
   VeribenimProviderProps,
+  VeribenimFormProps,
   ConsentBannerProps,
   VeribenimContextValue,
   VeribenimConfig,

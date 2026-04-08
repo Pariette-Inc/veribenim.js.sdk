@@ -1,4 +1,5 @@
 import { VeribenimApiClient } from './client';
+import { ScriptLoader } from './loader';
 import type {
   VeribenimConfig,
   VeribenimInternalConfig,
@@ -88,6 +89,15 @@ export class Veribenim {
     if (events?.onAccept) this.onAccept(events.onAccept);
     if (events?.onDecline) this.onDecline(events.onDecline);
     if (events?.onChange) this.onChange(events.onChange);
+  }
+
+  /**
+   * Bundle script'i sayfaya yükler.
+   * domain veya _scriptUrl config'de tanımlıysa çalışır.
+   */
+  loadScript(): Promise<void> {
+    const loader = new ScriptLoader(this.config);
+    return loader.load();
   }
 
   /** Kullanıcı tüm çerezleri kabul ettiğinde çağrılır */

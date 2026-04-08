@@ -164,6 +164,7 @@ import { Veribenim } from '@veribenim/core';
 
 const veribenim = new Veribenim({
   token: 'your-api-token-here',
+  domain: 'example.com', // Bundle script URL için
   lang: 'tr', // 'en', 'de', 'fr', 'es', 'bg', 'ar'
   debug: true, // development için
 });
@@ -203,9 +204,12 @@ import { VeribenimProvider, useVeribenim, ConsentBanner } from '@veribenim/react
 export default function App() {
   return (
     <VeribenimProvider
-      token="your-api-token-here"
-      lang="tr"
-      debug={false}
+      config={{
+        token: "your-api-token-here",
+        domain: "example.com",
+        lang: "tr",
+        debug: false,
+      }}
     >
       <MyApp />
     </VeribenimProvider>
@@ -240,7 +244,7 @@ export default function RootLayout({
   return (
     <html lang="tr">
       <body>
-        <VeribenimProvider token="your-api-token-here" lang="tr">
+        <VeribenimProvider config={{ token: "your-api-token-here", domain: "example.com", lang: "tr" }}>
           {children}
         </VeribenimProvider>
       </body>
@@ -261,6 +265,7 @@ const app = createApp(App);
 
 app.use(VeribenimPlugin, {
   token: 'your-api-token-here',
+  domain: 'example.com',
   lang: 'tr',
   debug: false,
 });
@@ -283,6 +288,7 @@ export default defineNuxtConfig({
   modules: ['@veribenim/nuxt'],
   veribenim: {
     token: 'your-api-token-here',
+    domain: 'example.com',
     lang: 'tr',
     debug: false,
   },
@@ -313,9 +319,10 @@ Framework-agnostic, tüm diğer paketlerin temelini oluşturan çekirdek kütüp
 
 ```typescript
 interface VeribenimConfig {
-  token: string; // Gerekli: API tokeniniz
+  token: string;    // Gerekli: API tokeniniz
+  domain?: string;  // Bundle script URL için site domain'i (örn: 'example.com')
   lang?: 'tr' | 'en' | 'de' | 'fr' | 'es' | 'bg' | 'ar'; // Varsayılan: 'tr'
-  debug?: boolean; // Varsayılan: false
+  debug?: boolean;  // Varsayılan: false
 }
 ```
 
@@ -410,9 +417,11 @@ import { VeribenimProvider } from '@veribenim/react';
 export default function App({ children }) {
   return (
     <VeribenimProvider
-      token="your-api-token-here"
-      lang="tr"
-      debug={false}
+      config={{
+        token: "your-api-token-here",
+        domain: "example.com",
+        lang: "tr",
+      }}
     >
       {children}
     </VeribenimProvider>
@@ -442,7 +451,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="tr">
       <body>
-        <VeribenimProvider token={process.env.NEXT_PUBLIC_VERIBENIM_TOKEN!} lang="tr">
+        <VeribenimProvider config={{ token: process.env.NEXT_PUBLIC_VERIBENIM_TOKEN!, domain: 'example.com', lang: 'tr' }}>
           {children}
         </VeribenimProvider>
       </body>
@@ -467,6 +476,7 @@ const app = createApp(App);
 
 app.use(VeribenimPlugin, {
   token: 'your-api-token-here',
+  domain: 'example.com',
   lang: 'tr',
 });
 
@@ -485,6 +495,7 @@ export default defineNuxtConfig({
   modules: ['@veribenim/nuxt'],
   veribenim: {
     token: process.env.NUXT_PUBLIC_VERIBENIM_TOKEN,
+    domain: 'example.com',
     lang: 'tr',
   },
 });
@@ -501,7 +512,7 @@ KVKK, rızayı geri çekmenin rıza vermek kadar kolay olmasını zorunlu kılar
 ```typescript
 import { Veribenim } from '@veribenim/core';
 
-const veribenim = new Veribenim({ token: 'your-token' });
+const veribenim = new Veribenim({ token: 'your-token', domain: 'example.com' });
 
 // Kullanıcı "Tüm izinleri geri çek" düğmesine tıkladığında
 await veribenim.withdrawConsent(sessionId);
