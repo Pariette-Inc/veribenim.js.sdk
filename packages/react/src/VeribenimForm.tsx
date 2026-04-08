@@ -75,17 +75,17 @@ export const VeribenimForm: React.FC<VeribenimFormProps> = ({
         await (client as any).renderForm(slug, `#${containerId}`, {
           theme,
           onSuccess: (data: any) => {
-            setLoading(false);
             onSuccess?.(data);
           },
           onError: (err: Error) => {
             setError(err.message);
-            setLoading(false);
             onError?.(err);
           },
           locale,
           lang,
         });
+        // Form başarıyla render edildi — spinner'ı kaldır
+        setLoading(false);
       } catch (err: any) {
         setError(err?.message || 'Form yüklenemedi');
         setLoading(false);
@@ -99,18 +99,10 @@ export const VeribenimForm: React.FC<VeribenimFormProps> = ({
   }
 
   return (
-    <div
-      ref={containerRef}
-      className={className}
-      style={{
-        minHeight: loading ? '100px' : 'auto',
-        display: 'flex',
-        alignItems: loading ? 'center' : 'auto',
-        justifyContent: loading ? 'center' : 'auto',
-      }}
-    >
+    <div className={className}>
+      {/* Spinner ve hata mesajı: React tarafından yönetilen ayrı div */}
       {loading && (
-        <div style={{ padding: 24, textAlign: 'center', color: '#9ca3af' }}>
+        <div style={{ minHeight: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
           Yükleniyor...
         </div>
       )}
@@ -119,6 +111,8 @@ export const VeribenimForm: React.FC<VeribenimFormProps> = ({
           {error}
         </div>
       )}
+      {/* Form container: form-renderer tarafından yönetilir, React bu div'e child render etmez */}
+      <div ref={containerRef} />
     </div>
   );
 };
