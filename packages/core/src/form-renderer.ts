@@ -58,56 +58,105 @@ export class FormRenderer {
     const borderRadius = this.options.theme?.borderRadius || '8px';
     const fontFamily = this.options.theme?.fontFamily || 'inherit';
 
+    // Builder'dan kaydedilen tema renkleri
+    const schemaTheme = this.schema.settings?.theme;
+
+    // Light mod değerleri (builder → varsayılan)
+    const light = schemaTheme?.light || {};
+    const lLabel       = light.label_color       || '#374151';
+    const lPlaceholder = light.placeholder_color || '#9ca3af';
+    const lInputBg     = light.input_bg          || '#ffffff';
+    const lInputBorder = light.input_border      || '#d1d5db';
+    const lValue       = light.value_color       || '#111827';
+    const lButtonBg    = light.button_bg         || primaryColor;
+    const lButtonText  = light.button_text       || '#ffffff';
+
+    // Dark mod değerleri (builder → varsayılan)
+    const dark = schemaTheme?.dark || {};
+    const dLabel       = dark.label_color       || '#e2e8f0';
+    const dPlaceholder = dark.placeholder_color || '#475569';
+    const dInputBg     = dark.input_bg          || '#1e293b';
+    const dInputBorder = dark.input_border      || '#334155';
+    const dValue       = dark.value_color       || '#f1f5f9';
+    const dButtonBg    = dark.button_bg         || primaryColor;
+    const dButtonText  = dark.button_text       || '#ffffff';
+
     const style = document.createElement('style');
     style.id = this.styleId;
     style.textContent = `
       .vb-form { font-family: ${fontFamily}; max-width: 600px; margin: 0 auto; padding: 24px; box-sizing: border-box; }
       .vb-form *, .vb-form *::before, .vb-form *::after { box-sizing: border-box; }
-      .vb-form-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; color: #111827; }
-      .vb-form-desc { color: #6b7280; margin-bottom: 24px; }
+      .vb-form-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; color: ${lValue}; }
+      .vb-form-desc { color: ${lPlaceholder}; margin-bottom: 24px; }
       .vb-field { margin-bottom: 20px; }
       .vb-field.vb-hidden { display: none; }
-      .vb-label { display: block; font-weight: 600; font-size: 0.875rem; color: #374151; margin-bottom: 6px; }
+      .vb-label { display: block; font-weight: 600; font-size: 0.875rem; color: ${lLabel}; margin-bottom: 6px; }
       .vb-required { color: #ef4444; margin-left: 2px; }
-      .vb-help { font-size: 0.75rem; color: #9ca3af; margin-top: 4px; }
+      .vb-help { font-size: 0.75rem; color: ${lPlaceholder}; margin-top: 4px; }
       .vb-input, .vb-textarea, .vb-select {
-        width: 100%; padding: 10px 14px; border: 1px solid #d1d5db; border-radius: ${borderRadius};
-        font-size: 0.875rem; outline: none; transition: border-color 0.15s; background: #fff; color: #111827;
+        width: 100%; padding: 10px 14px; border: 1px solid ${lInputBorder}; border-radius: ${borderRadius};
+        font-size: 0.875rem; outline: none; transition: border-color 0.15s;
+        background: ${lInputBg}; color: ${lValue};
       }
-      .vb-input:focus, .vb-textarea:focus, .vb-select:focus { border-color: ${primaryColor}; box-shadow: 0 0 0 3px ${primaryColor}22; }
+      .vb-input::placeholder, .vb-textarea::placeholder { color: ${lPlaceholder}; }
+      .vb-input:focus, .vb-textarea:focus, .vb-select:focus { border-color: ${lButtonBg}; box-shadow: 0 0 0 3px ${lButtonBg}22; }
       .vb-textarea { resize: vertical; min-height: 100px; }
       .vb-radio-group, .vb-checkbox-group { display: flex; flex-direction: column; gap: 8px; }
-      .vb-radio-item, .vb-checkbox-item { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-      .vb-radio-item input, .vb-checkbox-item input { accent-color: ${primaryColor}; width: 16px; height: 16px; }
+      .vb-radio-item, .vb-checkbox-item { display: flex; align-items: center; gap: 8px; cursor: pointer; color: ${lValue}; }
+      .vb-radio-item input, .vb-checkbox-item input { accent-color: ${lButtonBg}; width: 16px; height: 16px; }
       .vb-rating { display: flex; gap: 4px; }
       .vb-rating-star { font-size: 1.5rem; cursor: pointer; color: #d1d5db; transition: color 0.1s; }
       .vb-rating-star.active { color: #f59e0b; }
-      .vb-divider { border: none; border-top: 1px solid #e5e7eb; margin: 8px 0; }
-      .vb-heading { font-size: 1.125rem; font-weight: 600; color: #111827; margin-bottom: 4px; }
+      .vb-divider { border: none; border-top: 1px solid ${lInputBorder}; margin: 8px 0; }
+      .vb-heading { font-size: 1.125rem; font-weight: 600; color: ${lValue}; margin-bottom: 4px; }
       .vb-error { color: #ef4444; font-size: 0.75rem; margin-top: 4px; }
       .vb-submit-btn {
-        width: 100%; padding: 12px 24px; background: ${primaryColor}; color: #fff; border: none;
+        width: 100%; padding: 12px 24px; background: ${lButtonBg}; color: ${lButtonText}; border: none;
         border-radius: ${borderRadius}; font-size: 1rem; font-weight: 600; cursor: pointer; transition: opacity 0.15s;
       }
       .vb-submit-btn:hover { opacity: 0.9; }
       .vb-submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
       .vb-step-nav { display: flex; justify-content: space-between; margin-top: 16px; gap: 12px; }
       .vb-btn-secondary {
-        padding: 10px 20px; background: #f3f4f6; color: #374151; border: none;
+        padding: 10px 20px; background: ${lInputBg}; color: ${lLabel}; border: 1px solid ${lInputBorder};
         border-radius: ${borderRadius}; font-size: 0.875rem; cursor: pointer;
       }
       .vb-step-indicator { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; }
-      .vb-step-dot { width: 28px; height: 28px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600; color: #6b7280; }
-      .vb-step-dot.active { background: ${primaryColor}; color: #fff; }
+      .vb-step-dot { width: 28px; height: 28px; border-radius: 50%; background: ${lInputBorder}; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600; color: ${lLabel}; }
+      .vb-step-dot.active { background: ${lButtonBg}; color: ${lButtonText}; }
       .vb-step-dot.done { background: #10b981; color: #fff; }
-      .vb-step-line { flex: 1; height: 2px; background: #e5e7eb; }
+      .vb-step-line { flex: 1; height: 2px; background: ${lInputBorder}; }
       .vb-success { text-align: center; padding: 40px 24px; }
       .vb-success-icon { font-size: 3rem; margin-bottom: 16px; }
-      .vb-success-title { font-size: 1.25rem; font-weight: 700; color: #111827; margin-bottom: 8px; }
-      .vb-success-msg { color: #6b7280; }
-      .vb-badge { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 24px; padding-top: 12px; border-top: 1px solid #f3f4f6; }
+      .vb-success-title { font-size: 1.25rem; font-weight: 700; color: ${lValue}; margin-bottom: 8px; }
+      .vb-success-msg { color: ${lPlaceholder}; }
+      .vb-badge { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 24px; padding-top: 12px; border-top: 1px solid ${lInputBorder}; }
       .vb-badge svg { width: 12px; height: 12px; stroke: #9ca3af; fill: none; }
       .vb-badge span { font-size: 0.7rem; color: #9ca3af; }
+
+      @media (prefers-color-scheme: dark) {
+        .vb-form-title { color: ${dValue}; }
+        .vb-form-desc { color: ${dPlaceholder}; }
+        .vb-label { color: ${dLabel}; }
+        .vb-help { color: ${dPlaceholder}; }
+        .vb-input, .vb-textarea, .vb-select {
+          background: ${dInputBg}; color: ${dValue}; border-color: ${dInputBorder};
+        }
+        .vb-input::placeholder, .vb-textarea::placeholder { color: ${dPlaceholder}; }
+        .vb-input:focus, .vb-textarea:focus, .vb-select:focus { border-color: ${dButtonBg}; box-shadow: 0 0 0 3px ${dButtonBg}22; }
+        .vb-radio-item, .vb-checkbox-item { color: ${dValue}; }
+        .vb-radio-item input, .vb-checkbox-item input { accent-color: ${dButtonBg}; }
+        .vb-heading { color: ${dValue}; }
+        .vb-divider { border-top-color: ${dInputBorder}; }
+        .vb-submit-btn { background: ${dButtonBg}; color: ${dButtonText}; }
+        .vb-btn-secondary { background: ${dInputBg}; color: ${dLabel}; border-color: ${dInputBorder}; }
+        .vb-step-dot { background: ${dInputBorder}; color: ${dLabel}; }
+        .vb-step-dot.active { background: ${dButtonBg}; color: ${dButtonText}; }
+        .vb-step-line { background: ${dInputBorder}; }
+        .vb-success-title { color: ${dValue}; }
+        .vb-success-msg { color: ${dPlaceholder}; }
+        .vb-badge { border-top-color: ${dInputBorder}; }
+      }
     `;
     document.head.appendChild(style);
   }

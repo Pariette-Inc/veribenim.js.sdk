@@ -203,6 +203,16 @@ export interface FormStep {
   fields?: FormField[];
 }
 
+export interface FormThemeMode {
+  label_color?: string;
+  placeholder_color?: string;
+  input_bg?: string;
+  input_border?: string;
+  value_color?: string;
+  button_bg?: string;
+  button_text?: string;
+}
+
 export interface FormSchema {
   id: number;
   name: string;
@@ -215,6 +225,10 @@ export interface FormSchema {
     success_title?: string;
     success_message?: string;
     redirect_url?: string;
+    theme?: {
+      light?: FormThemeMode;
+      dark?: FormThemeMode;
+    };
   };
 }
 
