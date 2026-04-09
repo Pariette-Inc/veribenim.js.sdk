@@ -52,7 +52,9 @@ export class FormRenderer {
   }
 
   private injectStyles(): void {
-    if (document.getElementById(this.styleId)) return;
+    // Her render'da style'ı güncelle — SPA navigation veya hot reload'da eski stiller kalmasın
+    const existing = document.getElementById(this.styleId);
+    if (existing) existing.remove();
 
     const primaryColor = this.options.theme?.primaryColor || '#6366f1';
     const borderRadius = this.options.theme?.borderRadius || '8px';
@@ -60,6 +62,8 @@ export class FormRenderer {
 
     // Builder'dan kaydedilen tema renkleri
     const schemaTheme = this.schema.settings?.theme;
+    console.log('[VB] schema.settings:', JSON.stringify(this.schema.settings));
+    console.log('[VB] schemaTheme:', JSON.stringify(schemaTheme));
 
     // Light mod değerleri (builder → varsayılan)
     const light = schemaTheme?.light || {};
@@ -130,9 +134,23 @@ export class FormRenderer {
       .vb-success-icon { font-size: 3rem; margin-bottom: 16px; }
       .vb-success-title { font-size: 1.25rem; font-weight: 700; color: ${lValue}; margin-bottom: 8px; }
       .vb-success-msg { color: ${lPlaceholder}; }
-      .vb-badge { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 24px; padding-top: 12px; border-top: 1px solid ${lInputBorder}; }
-      .vb-badge svg { width: 12px; height: 12px; stroke: #9ca3af; fill: none; }
-      .vb-badge span { font-size: 0.7rem; color: #9ca3af; }
+      .vb-badge { display: flex; align-items: center; justify-content: center; margin-top: 24px; padding-top: 16px; border-top: 1px solid ${lInputBorder}; }
+      .vb-badge-chip { display: inline-flex; align-items: center; gap: 6px; background: ${lInputBg}; border: 1px solid ${lInputBorder}; border-radius: 999px; padding: 5px 10px 5px 8px; cursor: default; position: relative; }
+      .vb-badge-logo { display: flex; align-items: center; justify-content: center; width: 18px; height: 18px; background: #6d28d9; border-radius: 50%; flex-shrink: 0; }
+      .vb-badge-text { font-size: 0.68rem; font-weight: 600; color: ${lLabel}; opacity: 0.7; white-space: nowrap; }
+      .vb-badge-help { display: flex; align-items: center; justify-content: center; width: 14px; height: 14px; border-radius: 50%; border: 1px solid ${lInputBorder}; color: ${lLabel}; opacity: 0.5; font-size: 9px; font-weight: 700; cursor: pointer; margin-left: 2px; flex-shrink: 0; transition: opacity 0.15s, border-color 0.15s; }
+      .vb-badge-help:hover { opacity: 1; border-color: #6d28d9; color: #6d28d9; }
+      .vb-badge-popover { display: none; position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%); width: 280px; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); padding: 16px; z-index: 9999; text-align: left; }
+      .vb-badge-popover.open { display: block; }
+      .vb-badge-popover::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 6px solid transparent; border-top-color: #e5e7eb; }
+      .vb-badge-popover::before { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: -1px; border: 6px solid transparent; border-top-color: #fff; z-index: 1; }
+      .vb-popover-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+      .vb-popover-shield { width: 28px; height: 28px; background: linear-gradient(135deg,#7c3aed,#4f46e5); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+      .vb-popover-title { font-size: 0.8rem; font-weight: 700; color: #111827; }
+      .vb-popover-subtitle { font-size: 0.68rem; color: #6b7280; margin-top: 1px; }
+      .vb-popover-body { font-size: 0.72rem; color: #374151; line-height: 1.5; margin-bottom: 10px; }
+      .vb-popover-link { display: inline-flex; align-items: center; gap: 4px; font-size: 0.7rem; color: #7c3aed; font-weight: 600; text-decoration: none; }
+      .vb-popover-link:hover { text-decoration: underline; }
 
       @media (prefers-color-scheme: dark) {
         .vb-form-title { color: ${dValue}; }
@@ -156,6 +174,14 @@ export class FormRenderer {
         .vb-success-title { color: ${dValue}; }
         .vb-success-msg { color: ${dPlaceholder}; }
         .vb-badge { border-top-color: ${dInputBorder}; }
+        .vb-badge-chip { background: ${dInputBg}; border-color: ${dInputBorder}; }
+        .vb-badge-text { color: ${dLabel}; }
+        .vb-badge-help { border-color: ${dInputBorder}; color: ${dLabel}; }
+        .vb-badge-popover { background: #1e293b; border-color: ${dInputBorder}; }
+        .vb-badge-popover::after { border-top-color: ${dInputBorder}; }
+        .vb-badge-popover::before { border-top-color: #1e293b; }
+        .vb-popover-title { color: ${dValue}; }
+        .vb-popover-body { color: #cbd5e1; }
       }
     `;
     document.head.appendChild(style);
@@ -581,15 +607,59 @@ export class FormRenderer {
   }
 
   private renderBadge(): HTMLElement {
+    const company = this.schema.company || '';
+    const domain  = this.schema.domain  || '';
+    const verifyUrl = domain ? `https://veribenim.com/verify/${domain}` : 'https://veribenim.com';
+
+    const companyText = company
+      ? `<strong>${company}</strong> adına VeriBenim tarafından güvenle işlenmektedir. ${company}, kişisel verilerinizi hiçbir üçüncü tarafla paylaşamaz.`
+      : 'VeriBenim tarafından güvenle işlenmektedir. Kişisel verileriniz hiçbir üçüncü tarafla paylaşılamaz.';
+
     const badge = document.createElement('div');
     badge.className = 'vb-badge';
     badge.innerHTML = `
-      <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-      </svg>
-      <span>VeriBenim ile kişisel verileriniz koruma altında</span>
+      <div class="vb-badge-chip">
+        <div class="vb-badge-logo">
+          <svg width="10" height="12" viewBox="0 0 10 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 0L0 2V6C0 8.76 2.24 11.36 5 12C7.76 11.36 10 8.76 10 6V2L5 0Z" fill="white" fill-opacity="0.9"/>
+            <path d="M3.5 6L4.5 7L6.5 5" stroke="#6d28d9" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="vb-badge-text">VeriBenim korumasında</span>
+        <button class="vb-badge-help" aria-label="Güvenlik bilgisi" type="button">?</button>
+        <div class="vb-badge-popover" role="tooltip">
+          <div class="vb-popover-header">
+            <div class="vb-popover-shield">
+              <svg width="14" height="16" viewBox="0 0 14 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M7 0L0 3V8C0 11.68 3.08 15.14 7 16C10.92 15.14 14 11.68 14 8V3L7 0Z" fill="white" fill-opacity="0.9"/>
+                <path d="M4.5 8L6 9.5L9.5 6" stroke="#7c3aed" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div>
+              <div class="vb-popover-title">Verileriniz Güvende</div>
+              <div class="vb-popover-subtitle">KVKK & GDPR Uyumlu</div>
+            </div>
+          </div>
+          <div class="vb-popover-body">
+            Bu formdaki kişisel verileriniz ${companyText}
+          </div>
+          ${domain ? `<a href="${verifyUrl}" target="_blank" rel="noopener" class="vb-popover-link">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Güvenlik sertifikasını görüntüle
+          </a>` : ''}
+        </div>
+      </div>
     `;
+
+    // Popover toggle
+    const helpBtn  = badge.querySelector('.vb-badge-help') as HTMLButtonElement;
+    const popover  = badge.querySelector('.vb-badge-popover') as HTMLElement;
+    helpBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      popover.classList.toggle('open');
+    });
+    document.addEventListener('click', () => popover?.classList.remove('open'));
+
     return badge;
   }
 
@@ -801,14 +871,13 @@ export class FormRenderer {
           <div class="vb-success-title">${response.success_title || 'Teşekkürler!'}</div>
           <div class="vb-success-msg">${response.success_message || 'Formunuz başarıyla gönderildi.'}</div>
         </div>
-        <div class="vb-badge">
-          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" fill="none" stroke="#9ca3af">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-          </svg>
-          <span style="font-size:0.7rem;color:#9ca3af">VeriBenim ile kişisel verileriniz koruma altında</span>
-        </div>
+        <div class="vb-badge" id="vb-success-badge"></div>
       </div>
     `;
+    const badgeSlot = this.container.querySelector('#vb-success-badge');
+    if (badgeSlot) {
+      const badgeEl = this.renderBadge();
+      badgeSlot.replaceWith(badgeEl);
+    }
   }
 }

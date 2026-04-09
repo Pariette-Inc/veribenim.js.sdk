@@ -220,6 +220,8 @@ export interface FormSchema {
   type: 'single_step' | 'multi_step';
   steps: FormStep[];
   fields: FormField[];
+  company?: string;
+  domain?: string;
   settings?: {
     submit_button_text?: string;
     success_title?: string;
