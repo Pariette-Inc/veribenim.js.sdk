@@ -1,6 +1,6 @@
 {
   "name": "@veribenim/nuxt",
-  "version": "5.1.9",
+  "version": "5.2.2",
   "description": "Veribenim KVKK/GDPR çerez onayı SDK - Nuxt 3 Modülü",
   "keywords": [
     "kvkk",
@@ -33,8 +33,8 @@
   },
   "dependencies": {
     "@nuxt/kit": "^3.0.0",
-    "@veribenim/core": "workspace:*",
-    "@veribenim/vue": "workspace:*"
+    "@veribenim/core": "5.2.2",
+    "@veribenim/vue": "5.2.2"
   },
   "peerDependencies": {
     "nuxt": ">=3.0.0"

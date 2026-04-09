@@ -48,11 +48,46 @@ export class FormRenderer {
 
   private mount(): void {
     this.injectStyles();
+    this.setupThemeObserver();
     this.render();
   }
 
+  // Sitenin dark/light modunu algıla:
+  // 1. html.dark / data-theme="dark" → dark (site toggle'ı)
+  // 2. html.light / data-theme="light" → light (site toggle'ı)
+  // 3. İkisi de yoksa → OS tercihine bak
+  private isDarkMode(): boolean {
+    const html = document.documentElement;
+    if (
+      html.classList.contains('dark') ||
+      html.getAttribute('data-theme') === 'dark' ||
+      html.getAttribute('data-color-scheme') === 'dark'
+    ) return true;
+    if (
+      html.classList.contains('light') ||
+      html.getAttribute('data-theme') === 'light' ||
+      html.getAttribute('data-color-scheme') === 'light'
+    ) return false;
+    return window.matchMedia?.('(prefers-color-scheme: dark)')?.matches ?? false;
+  }
+
+  // Tema değişikliklerini izle: OS tercih değişimi + site class/attribute değişimi
+  private setupThemeObserver(): void {
+    // OS değişimi
+    window.matchMedia?.('(prefers-color-scheme: dark)')
+      ?.addEventListener?.('change', () => this.injectStyles());
+
+    // Site class/attribute değişimi (html elemanı)
+    if (typeof MutationObserver !== 'undefined') {
+      new MutationObserver(() => this.injectStyles()).observe(
+        document.documentElement,
+        { attributes: true, attributeFilter: ['class', 'data-theme', 'data-color-scheme'] }
+      );
+    }
+  }
+
   private injectStyles(): void {
-    // Her render'da style'ı güncelle — SPA navigation veya hot reload'da eski stiller kalmasın
+    // Her render'da style'ı güncelle
     const existing = document.getElementById(this.styleId);
     if (existing) existing.remove();
 
@@ -60,30 +95,23 @@ export class FormRenderer {
     const borderRadius = this.options.theme?.borderRadius || '8px';
     const fontFamily = this.options.theme?.fontFamily || 'inherit';
 
-    // Builder'dan kaydedilen tema renkleri
     const schemaTheme = this.schema.settings?.theme;
-    console.log('[VB] schema.settings:', JSON.stringify(this.schema.settings));
-    console.log('[VB] schemaTheme:', JSON.stringify(schemaTheme));
+    const isDark = this.isDarkMode();
 
-    // Light mod değerleri (builder → varsayılan)
-    const light = schemaTheme?.light || {};
-    const lLabel       = light.label_color       || '#374151';
-    const lPlaceholder = light.placeholder_color || '#9ca3af';
-    const lInputBg     = light.input_bg          || '#ffffff';
-    const lInputBorder = light.input_border      || '#d1d5db';
-    const lValue       = light.value_color       || '#111827';
-    const lButtonBg    = light.button_bg         || primaryColor;
-    const lButtonText  = light.button_text       || '#ffffff';
+    // Aktif moda göre renkleri çöz
+    const m = isDark ? (schemaTheme?.dark || {}) : (schemaTheme?.light || {});
+    const label       = m.label_color       || (isDark ? '#e2e8f0' : '#374151');
+    const placeholder = m.placeholder_color || (isDark ? '#475569' : '#9ca3af');
+    const inputBg     = m.input_bg          || (isDark ? '#1e293b' : '#ffffff');
+    const inputBorder = m.input_border      || (isDark ? '#334155' : '#d1d5db');
+    const value       = m.value_color       || (isDark ? '#f1f5f9' : '#111827');
+    const buttonBg    = m.button_bg         || primaryColor;
+    const buttonText  = m.button_text       || '#ffffff';
 
-    // Dark mod değerleri (builder → varsayılan)
-    const dark = schemaTheme?.dark || {};
-    const dLabel       = dark.label_color       || '#e2e8f0';
-    const dPlaceholder = dark.placeholder_color || '#475569';
-    const dInputBg     = dark.input_bg          || '#1e293b';
-    const dInputBorder = dark.input_border      || '#334155';
-    const dValue       = dark.value_color       || '#f1f5f9';
-    const dButtonBg    = dark.button_bg         || primaryColor;
-    const dButtonText  = dark.button_text       || '#ffffff';
+    // Geriye dönük uyumluluk için eski değişken adları
+    const lLabel = label; const lPlaceholder = placeholder; const lInputBg = inputBg;
+    const lInputBorder = inputBorder; const lValue = value;
+    const lButtonBg = buttonBg; const lButtonText = buttonText;
 
     const style = document.createElement('style');
     style.id = this.styleId;
@@ -152,37 +180,6 @@ export class FormRenderer {
       .vb-popover-link { display: inline-flex; align-items: center; gap: 4px; font-size: 0.7rem; color: #7c3aed; font-weight: 600; text-decoration: none; }
       .vb-popover-link:hover { text-decoration: underline; }
 
-      @media (prefers-color-scheme: dark) {
-        .vb-form-title { color: ${dValue}; }
-        .vb-form-desc { color: ${dPlaceholder}; }
-        .vb-label { color: ${dLabel}; }
-        .vb-help { color: ${dPlaceholder}; }
-        .vb-input, .vb-textarea, .vb-select {
-          background: ${dInputBg}; color: ${dValue}; border-color: ${dInputBorder};
-        }
-        .vb-input::placeholder, .vb-textarea::placeholder { color: ${dPlaceholder}; }
-        .vb-input:focus, .vb-textarea:focus, .vb-select:focus { border-color: ${dButtonBg}; box-shadow: 0 0 0 3px ${dButtonBg}22; }
-        .vb-radio-item, .vb-checkbox-item { color: ${dValue}; }
-        .vb-radio-item input, .vb-checkbox-item input { accent-color: ${dButtonBg}; }
-        .vb-heading { color: ${dValue}; }
-        .vb-divider { border-top-color: ${dInputBorder}; }
-        .vb-submit-btn { background: ${dButtonBg}; color: ${dButtonText}; }
-        .vb-btn-secondary { background: ${dInputBg}; color: ${dLabel}; border-color: ${dInputBorder}; }
-        .vb-step-dot { background: ${dInputBorder}; color: ${dLabel}; }
-        .vb-step-dot.active { background: ${dButtonBg}; color: ${dButtonText}; }
-        .vb-step-line { background: ${dInputBorder}; }
-        .vb-success-title { color: ${dValue}; }
-        .vb-success-msg { color: ${dPlaceholder}; }
-        .vb-badge { border-top-color: ${dInputBorder}; }
-        .vb-badge-chip { background: ${dInputBg}; border-color: ${dInputBorder}; }
-        .vb-badge-text { color: ${dLabel}; }
-        .vb-badge-help { border-color: ${dInputBorder}; color: ${dLabel}; }
-        .vb-badge-popover { background: #1e293b; border-color: ${dInputBorder}; }
-        .vb-badge-popover::after { border-top-color: ${dInputBorder}; }
-        .vb-badge-popover::before { border-top-color: #1e293b; }
-        .vb-popover-title { color: ${dValue}; }
-        .vb-popover-body { color: #cbd5e1; }
-      }
     `;
     document.head.appendChild(style);
   }
