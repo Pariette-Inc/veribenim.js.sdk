@@ -3,17 +3,17 @@ import { Veribenim, type VeribenimConfig, type ConsentPreferences } from '@verib
 import { VeribenimContext, type VeribenimContextValue } from './VeribenimContext';
 
 const ALL_ACCEPTED: ConsentPreferences = {
-  necessary: true,
+  strictly_necessary: true,
+  functional: true,
   analytics: true,
   marketing: true,
-  preferences: true,
 };
 
 const ALL_DECLINED: ConsentPreferences = {
-  necessary: true,
+  strictly_necessary: true,
+  functional: false,
   analytics: false,
   marketing: false,
-  preferences: false,
 };
 
 export interface VeribenimProviderProps {
@@ -52,7 +52,7 @@ export function VeribenimProvider({ config, children }: VeribenimProviderProps) 
   useEffect(() => {
     // Mevcut tercihleri yükle
     client.getPreferences().then((res) => {
-      if (res) setPreferences(res.preferences);
+      if (res) setPreferences(res.current_consents);
       setIsLoaded(true);
     });
   }, [client]);
@@ -62,8 +62,8 @@ export function VeribenimProvider({ config, children }: VeribenimProviderProps) 
       const fullPrefs = { ...ALL_ACCEPTED, ...prefs };
       const res = await client.savePreferences(fullPrefs);
       if (res) {
-        setPreferences(res.preferences);
-        await client.logConsent({ action: 'accept_all', preferences: fullPrefs });
+        setPreferences(fullPrefs);
+        await client.logConsent({ action: 'accept_all', consents: fullPrefs });
       }
     },
     [client]
@@ -72,8 +72,8 @@ export function VeribenimProvider({ config, children }: VeribenimProviderProps) 
   const decline = useCallback(async () => {
     const res = await client.savePreferences(ALL_DECLINED);
     if (res) {
-      setPreferences(res.preferences);
-      await client.logConsent({ action: 'reject_all', preferences: ALL_DECLINED });
+      setPreferences(ALL_DECLINED);
+      await client.logConsent({ action: 'reject_all', consents: ALL_DECLINED });
     }
   }, [client]);
 
@@ -81,8 +81,8 @@ export function VeribenimProvider({ config, children }: VeribenimProviderProps) 
     async (prefs: ConsentPreferences) => {
       const res = await client.savePreferences(prefs);
       if (res) {
-        setPreferences(res.preferences);
-        await client.logConsent({ action: 'save_preferences', preferences: prefs });
+        setPreferences(prefs);
+        await client.logConsent({ action: 'save_preferences', consents: prefs });
       }
     },
     [client]

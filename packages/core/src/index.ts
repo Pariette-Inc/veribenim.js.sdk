@@ -7,6 +7,7 @@ import type {
   ConsentPreferences,
   ConsentLogPayload,
   PreferencesResponse,
+  SavePreferencesResponse,
   FormConsentPayload,
   FormConsentResponse,
   DsarPayload,
@@ -21,6 +22,10 @@ import type {
   FormSubmitPayload,
   FormSubmitResponse,
   RenderFormOptions,
+  AnalyticsHitPayload,
+  CookieScanResponse,
+  DomainVerifyResponse,
+  ImpressionPixelOptions,
 } from './types';
 
 export * from './types';
@@ -152,22 +157,22 @@ export class Veribenim {
 
   /** Ziyaretçi tercihlerini kaydet */
   savePreferences(
-    preferences: ConsentPreferences,
+    consents: ConsentPreferences,
     sessionId?: string
-  ): Promise<PreferencesResponse | null> {
-    return this.api.savePreferences(preferences, sessionId);
+  ): Promise<SavePreferencesResponse | null> {
+    return this.api.savePreferences(consents, sessionId);
   }
 
   /**
    * Belirtilen kategori için ziyaretçi izni var mı?
-   * @param category - 'analytics' | 'marketing' | 'functional' | 'necessary'
+   * @param category - 'strictly_necessary' | 'functional' | 'analytics' | 'marketing'
    * @param sessionId - Opsiyonel session ID
    */
   async hasConsent(category: keyof ConsentPreferences, sessionId?: string): Promise<boolean> {
     const prefs = await this.api.getPreferences(sessionId);
-    if (!prefs) return false;
-    const consents = (prefs as any).consents ?? prefs.preferences;
-    return !!(consents as ConsentPreferences)[category];
+    const consents = prefs?.current_consents;
+    if (!consents) return false;
+    return !!consents[category];
   }
 
   /**
@@ -221,6 +226,40 @@ export class Veribenim {
     options: RenderFormOptions = {}
   ): Promise<void> {
     return this.api.renderForm(slug, selector, options);
+  }
+
+  /**
+   * Web Analytics hit gönder (gizlilik-öncelikli; sendBeacon uyumlu).
+   * POST /api/v/{token}/e
+   */
+  trackPageview(
+    payload: Omit<AnalyticsHitPayload, 'url'> & { url?: string }
+  ): Promise<boolean> {
+    return this.api.trackPageview(payload);
+  }
+
+  /**
+   * URL'i tarayıp tespit edilen tracker/çerez sağlayıcılarını döner.
+   * POST /api/public/cookie-scan
+   */
+  scanCookies(url: string): Promise<CookieScanResponse | null> {
+    return this.api.scanCookies(url);
+  }
+
+  /**
+   * Domain'in Veribenim'de kayıtlı/aktif olduğunu doğrula.
+   * GET /api/public/verify/{domain}
+   */
+  verifyDomain(domain?: string): Promise<DomainVerifyResponse | null> {
+    return this.api.verifyDomain(domain);
+  }
+
+  /**
+   * 1x1 pixel impression URL'i üretir (<img> fallback).
+   * GET /api/impressions/{token}/pixel
+   */
+  impressionPixelUrl(opts: ImpressionPixelOptions = {}): string {
+    return this.api.impressionPixelUrl(opts);
   }
 }
 

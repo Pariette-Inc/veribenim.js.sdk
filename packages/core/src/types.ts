@@ -7,15 +7,20 @@ export type ConsentAction =
   | 'accept_all'
   | 'reject_all'
   | 'save_preferences'
+  | 'withdraw'
   | 'ping'
   | 'visit'
   | 'exit';
 
+/**
+ * Çerez rıza durumu — platformun otoritatif kategori anahtarları.
+ * (KAYNAK: veribenim.api PreferenceCenterController + CookieProviderSeeder)
+ */
 export interface ConsentPreferences {
-  necessary: boolean;
+  strictly_necessary: boolean;
+  functional: boolean;
   analytics: boolean;
   marketing: boolean;
-  preferences: boolean;
 }
 
 export interface VeribenimConfig {
@@ -60,16 +65,47 @@ export interface ImpressionPayload {
 
 export interface ConsentLogPayload {
   action: ConsentAction;
-  preferences?: ConsentPreferences;
+  /** Kategori bazlı rıza. Platform `consents` alanını bekler. */
+  consents?: ConsentPreferences;
   session_id?: string;
   url?: string;
 }
 
+/** GET /api/preferences/{token} içindeki kategori tanımı. */
+export interface ConsentCategoryCookie {
+  id: number;
+  name: string;
+  description?: string;
+  mandatory?: boolean;
+  is_enabled_by_default?: boolean;
+}
+
+export interface ConsentCategoryInfo {
+  id: 'strictly_necessary' | 'functional' | 'analytics' | 'marketing';
+  label: string;
+  label_en: string;
+  required: boolean;
+  cookies: ConsentCategoryCookie[];
+}
+
+/**
+ * GET /api/preferences/{token} yanıtı.
+ * `current_consents` yalnızca geçerli bir session_id verildiğinde dolar; aksi halde null.
+ */
 export interface PreferencesResponse {
-  session_id: string;
-  preferences: ConsentPreferences;
-  created_at: string;
-  updated_at: string;
+  status: boolean;
+  environment_name?: string;
+  environment_url?: string;
+  banner_settings?: Record<string, any>;
+  active_regulations?: string[];
+  categories: ConsentCategoryInfo[];
+  current_consents: ConsentPreferences | null;
+}
+
+/** POST /api/preferences/{token} yanıtı (yalnızca durum + mesaj döner). */
+export interface SavePreferencesResponse {
+  status: boolean;
+  message: string;
 }
 
 export type ConsentCallback = (preferences: ConsentPreferences) => void;
@@ -255,4 +291,86 @@ export interface RenderFormOptions {
   locale?: 'tr' | 'en';
   /** Form label/placeholder dilini belirler. API'den o dilde çözümlenmiş schema döner. */
   lang?: string;
+}
+
+/**
+ * Web Analytics hit verisi (POST /api/v/{token}/e — sendBeacon uyumlu).
+ * Yalnızca 'sid' ve 'url' zorunludur.
+ */
+export interface AnalyticsHitPayload {
+  /** session_id (UUID) — zorunlu */
+  sid: string;
+  /** Tam sayfa URL'i — zorunlu */
+  url: string;
+  /** visitor_id (hash); verilmezse backend sid'e düşer */
+  vid?: string;
+  title?: string;
+  /** referrer URL */
+  ref?: string;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_term?: string;
+  utm_content?: string;
+  /** scroll derinliği (%) */
+  scroll?: number;
+  /** önceki sayfada geçen süre (ms) */
+  ttp?: number;
+  /** ekran çözünürlüğü, örn "1920x1080" */
+  res?: string;
+  /** dil kodu, örn "tr-TR" */
+  lang?: string;
+  /** davranışsal ipucu: fare hareketi var mı (0/1) */
+  hm?: 0 | 1;
+  /** sayfa yüklenme süresi (ms) */
+  lt?: number;
+}
+
+/** Çerez tarama sonucundaki tek bir tespit (POST /api/public/cookie-scan). */
+export interface CookieScanResultItem {
+  provider_id: number | null;
+  slug: string | null;
+  name: string;
+  /** analytics | marketing | functional | strictly_necessary | other */
+  category: string;
+  description: string | null;
+  matched_pattern: string;
+  is_in_db: boolean;
+}
+
+export interface CookieScanResponse {
+  status: boolean;
+  message: string;
+  detected: CookieScanResultItem[];
+  scanned_url: string;
+  count: number;
+}
+
+/** Domain doğrulama yanıtı (GET /api/public/verify/{domain}). */
+export interface DomainVerifyResponse {
+  found: boolean;
+  domain: string;
+  message?: string;
+  title?: string;
+  verified?: boolean;
+  verified_at?: string | null;
+  active_regulations?: string[];
+  subscription_status?: 'active' | 'suspended' | 'free';
+  last_published_at?: string | null;
+  compliance_grade?: 'A' | 'B' | 'C' | 'D' | 'F';
+  protected_categories?: string[];
+  sdk_active?: boolean;
+  total_consents_collected?: number;
+  badge_verified?: boolean;
+  plan_name?: string;
+  badge_url?: string;
+  embed_badge_url?: string;
+}
+
+/** impressionPixelUrl seçenekleri (GET /api/impressions/{token}/pixel). */
+export interface ImpressionPixelOptions {
+  url?: string;
+  session_id?: string;
+  referrer?: string;
+  domain?: string;
 }

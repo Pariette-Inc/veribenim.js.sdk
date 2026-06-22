@@ -4,6 +4,7 @@ import type {
   ConsentLogPayload,
   ConsentPreferences,
   PreferencesResponse,
+  SavePreferencesResponse,
   FormConsentPayload,
   FormConsentResponse,
   DsarPayload,
@@ -12,6 +13,10 @@ import type {
   FormSubmitPayload,
   FormSubmitResponse,
   RenderFormOptions,
+  AnalyticsHitPayload,
+  CookieScanResponse,
+  DomainVerifyResponse,
+  ImpressionPixelOptions,
 } from './types';
 import { FormRenderer } from './form-renderer';
 
@@ -102,13 +107,13 @@ export class VeribenimApiClient {
    * POST /api/preferences/{token}
    */
   async savePreferences(
-    preferences: ConsentPreferences,
+    consents: ConsentPreferences,
     sessionId?: string
-  ): Promise<PreferencesResponse | null> {
-    return this.request<PreferencesResponse>(
+  ): Promise<SavePreferencesResponse | null> {
+    return this.request<SavePreferencesResponse>(
       'POST',
       `/api/preferences/${this.config.token}`,
-      { preferences, session_id: sessionId }
+      { consents, session_id: sessionId }
     );
   }
 
@@ -234,5 +239,119 @@ export class VeribenimApiClient {
     options: RenderFormOptions = {}
   ): Promise<void> {
     return FormRenderer.render(this.config, slug, selector, options);
+  }
+
+  /**
+   * Web Analytics hit gönderir (gizlilik-öncelikli sayfa görüntüleme/olay).
+   * POST /api/v/{token}/e — tarayıcıda sendBeacon, yoksa keepalive fetch.
+   * 'sid' (session_id) zorunlu; 'url' verilmezse window.location.href kullanılır.
+   */
+  async trackPageview(
+    payload: Omit<AnalyticsHitPayload, 'url'> & { url?: string }
+  ): Promise<boolean> {
+    const data: AnalyticsHitPayload = {
+      ...payload,
+      url:
+        payload.url ??
+        (typeof window !== 'undefined' ? window.location.href : ''),
+    };
+
+    // Bağlamsal alanları yalnızca verilmemişse doldur
+    if (data.title === undefined && typeof document !== 'undefined')
+      data.title = document.title;
+    if (data.ref === undefined && typeof document !== 'undefined')
+      data.ref = document.referrer;
+    if (data.res === undefined && typeof screen !== 'undefined')
+      data.res = `${screen.width}x${screen.height}`;
+    if (data.lang === undefined && typeof navigator !== 'undefined')
+      data.lang = navigator.language;
+
+    if (!data.sid || !data.url) {
+      this.log('trackPageview: "sid" ve "url" zorunludur');
+      return false;
+    }
+
+    const url = `${this.baseUrl}/api/v/${this.config.token}/e`;
+
+    // Tarayıcıda sendBeacon en güvenilir yol (sayfa kapanırken bile gider)
+    if (
+      typeof navigator !== 'undefined' &&
+      typeof navigator.sendBeacon === 'function'
+    ) {
+      try {
+        const blob = new Blob([JSON.stringify(data)], {
+          type: 'application/json',
+        });
+        if (navigator.sendBeacon(url, blob)) return true;
+      } catch {
+        /* fetch'e düş */
+      }
+    }
+
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+        keepalive: true,
+      });
+      return res.ok; // 204 dahil 2xx
+    } catch (err) {
+      this.log('trackPageview failed:', err);
+      return false;
+    }
+  }
+
+  /**
+   * Verilen URL'i tarayıp tespit edilen tracker/çerez sağlayıcılarını döner.
+   * POST /api/public/cookie-scan (public — token gerekmez)
+   */
+  async scanCookies(url: string): Promise<CookieScanResponse | null> {
+    return this.request<CookieScanResponse>('POST', `/api/public/cookie-scan`, {
+      url,
+    });
+  }
+
+  /**
+   * Bir domain'in Veribenim'de kayıtlı/aktif olup olmadığını döner.
+   * GET /api/public/verify/{domain} (public). domain verilmezse config.domain kullanılır.
+   */
+  async verifyDomain(domain?: string): Promise<DomainVerifyResponse | null> {
+    const raw = domain ?? this.config.domain ?? '';
+    if (!raw) {
+      this.log('verifyDomain: domain gerekli');
+      return null;
+    }
+    const clean = raw
+      .replace(/^https?:\/\//, '')
+      .replace(/^www\./, '')
+      .split('/')[0]
+      .toLowerCase();
+    return this.request<DomainVerifyResponse>(
+      'GET',
+      `/api/public/verify/${encodeURIComponent(clean)}`
+    );
+  }
+
+  /**
+   * 1x1 pixel impression URL'i üretir. <img src="..."> olarak kullanın
+   * (JS çalışmayan ortamlar / e-posta için fallback).
+   * GET /api/impressions/{token}/pixel
+   */
+  impressionPixelUrl(opts: ImpressionPixelOptions = {}): string {
+    const params = new URLSearchParams();
+    const u =
+      opts.url ?? (typeof window !== 'undefined' ? window.location.href : '');
+    if (u) params.set('u', u);
+    if (opts.domain) params.set('d', opts.domain);
+    if (opts.session_id) params.set('s', opts.session_id);
+    const ref =
+      opts.referrer ??
+      (typeof document !== 'undefined' ? document.referrer : '');
+    if (ref) params.set('r', ref);
+    const qs = params.toString();
+    return `${this.baseUrl}/api/impressions/${this.config.token}/pixel${
+      qs ? `?${qs}` : ''
+    }`;
   }
 }

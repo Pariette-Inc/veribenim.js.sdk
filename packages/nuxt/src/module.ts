@@ -1,4 +1,4 @@
-import { defineNuxtModule, addPlugin, createResolver, addImports } from '@nuxt/kit';
+import { defineNuxtModule, addPlugin, createResolver, addImports, addComponent } from '@nuxt/kit';
 import type { VeribenimConfig } from '@veribenim/core';
 
 export interface ModuleOptions extends Omit<VeribenimConfig, 'token'> {
@@ -7,6 +7,10 @@ export interface ModuleOptions extends Omit<VeribenimConfig, 'token'> {
    * Önerilen: process.env.NUXT_PUBLIC_VERIBENIM_TOKEN ile set edin
    */
   token: string;
+  /** Banner script'ini otomatik yükle. Varsayılan: true */
+  autoLoad?: boolean;
+  /** @internal API base URL override. Varsayılan: https://live.veribenim.com */
+  apiUrl?: string;
 }
 
 /**
@@ -67,6 +71,18 @@ export default defineNuxtModule<ModuleOptions>({
     addImports({
       name: 'useVeribenim',
       from: resolver.resolve('./runtime/composables'),
+    });
+
+    // Bileşenleri otomatik kaydet: <ConsentBanner /> ve <VeribenimForm />
+    addComponent({
+      name: 'ConsentBanner',
+      filePath: '@veribenim/vue',
+      export: 'ConsentBanner',
+    });
+    addComponent({
+      name: 'VeribenimForm',
+      filePath: '@veribenim/vue',
+      export: 'VeribenimForm',
     });
   },
 });

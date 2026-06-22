@@ -39,7 +39,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@veribenim/core": "5.2.2"
+    "@veribenim/core": "workspace:*"
   },
   "peerDependencies": {
     "react": ">=17.0.0",

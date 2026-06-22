@@ -8,6 +8,7 @@ import type {
   FormSubmitResponse,
 } from './types';
 import { VeribenimApiClient } from './client';
+import { sanitizeHtml, escapeHtml } from './sanitize';
 
 export class FormRenderer {
   private client: VeribenimApiClient;
@@ -68,7 +69,39 @@ export class FormRenderer {
       html.getAttribute('data-theme') === 'light' ||
       html.getAttribute('data-color-scheme') === 'light'
     ) return false;
-    return window.matchMedia?.('(prefers-color-scheme: dark)')?.matches ?? false;
+    // 3. Site açık/koyu işaretlemediyse: OS tercihine DEĞİL, sayfanın GERÇEK
+    //    arka plan rengine bak — "site neyse form da o olsun". OS dark ama site
+    //    light olduğunda formun dark çıkması bug'ını önler.
+    return this.isHostBackgroundDark();
+  }
+
+  /** Sayfanın gerçek arka plan rengini ölçer; koyuysa true. Bilinmiyorsa light varsayar. */
+  private isHostBackgroundDark(): boolean {
+    try {
+      for (const el of [document.body, document.documentElement]) {
+        if (!el) continue;
+        const lum = this.bgLuminance(getComputedStyle(el).backgroundColor);
+        if (lum !== null) return lum < 0.5;
+      }
+    } catch {
+      // erişilemezse light varsay
+    }
+    return false;
+  }
+
+  /** rgb(a) string → relative luminance (0..1). Şeffaf/çözülemezse null. */
+  private bgLuminance(color: string): number | null {
+    const m = color && color.match(/rgba?\(([^)]+)\)/);
+    if (!m) return null;
+    const p = m[1].split(',').map((x) => parseFloat(x.trim()));
+    const [r, g, b] = p;
+    const a = p.length > 3 ? p[3] : 1;
+    if (!isFinite(r) || a === 0) return null;
+    const lin = (c: number) => {
+      c /= 255;
+      return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    };
+    return 0.2126 * lin(r) + 0.715
   }
 
   // Tema değişikliklerini izle: OS tercih değişimi + site class/attribute değişimi
@@ -100,13 +133,13 @@ export class FormRenderer {
 
     // Aktif moda göre renkleri çöz
     const m = isDark ? (schemaTheme?.dark || {}) : (schemaTheme?.light || {});
-    const label       = m.label_color       || (isDark ? '#e2e8f0' : '#374151');
+    const label = m.label_color || (isDark ? '#e2e8f0' : '#374151');
     const placeholder = m.placeholder_color || (isDark ? '#475569' : '#9ca3af');
-    const inputBg     = m.input_bg          || (isDark ? '#1e293b' : '#ffffff');
-    const inputBorder = m.input_border      || (isDark ? '#334155' : '#d1d5db');
-    const value       = m.value_color       || (isDark ? '#f1f5f9' : '#111827');
-    const buttonBg    = m.button_bg         || primaryColor;
-    const buttonText  = m.button_text       || '#ffffff';
+    const inputBg = m.input_bg || (isDark ? '#1e293b' : '#ffffff');
+    const inputBorder = m.input_border || (isDark ? '#334155' : '#d1d5db');
+    const value = m.value_color || (isDark ? '#f1f5f9' : '#111827');
+    const buttonBg = m.button_bg || primaryColor;
+    const buttonText = m.button_text || '#ffffff';
 
     // Geriye dönük uyumluluk için eski değişken adları
     const lLabel = label; const lPlaceholder = placeholder; const lInputBg = inputBg;
@@ -535,7 +568,9 @@ export class FormRenderer {
     // Body
     const body = document.createElement('div');
     body.style.cssText = 'padding:20px;overflow-y:auto;flex:1;font-size:0.875rem;color:#334155;line-height:1.6;';
-    body.innerHTML = content;
+    // API'den gelen zengin metin — DOMPurify ile sanitize edilir
+    // (renk, font-size, font-weight gibi inline stiller korunur)
+    body.innerHTML = sanitizeHtml(content);
 
     // Footer
     const footer = document.createElement('div');
@@ -605,7 +640,7 @@ export class FormRenderer {
 
   private renderBadge(): HTMLElement {
     const company = this.schema.company || '';
-    const domain  = this.schema.domain  || '';
+    const domain = this.schema.domain || '';
     const verifyUrl = domain ? `https://veribenim.com/verify/${domain}` : 'https://veribenim.com';
 
     const companyText = company
@@ -649,8 +684,8 @@ export class FormRenderer {
     `;
 
     // Popover toggle
-    const helpBtn  = badge.querySelector('.vb-badge-help') as HTMLButtonElement;
-    const popover  = badge.querySelector('.vb-badge-popover') as HTMLElement;
+    const helpBtn = badge.querySelector('.vb-badge-help') as HTMLButtonElement;
+    const popover = badge.querySelector('.vb-badge-popover') as HTMLElement;
     helpBtn?.addEventListener('click', (e) => {
       e.stopPropagation();
       popover.classList.toggle('open');
@@ -820,9 +855,9 @@ export class FormRenderer {
     const allFields: FormField[] =
       this.schema.type === 'multi_step'
         ? (this.schema.steps as any[]).reduce(
-            (acc: FormField[], step: any) => [...acc, ...(step.fields || [])],
-            []
-          )
+          (acc: FormField[], step: any) => [...acc, ...(step.fields || [])],
+          []
+        )
         : this.schema.fields || [];
 
     const payload: FormSubmitPayload = {};
@@ -861,12 +896,17 @@ export class FormRenderer {
   }
 
   private showSuccess(response: any): void {
+    // API'den gelen başlık ve mesaj — escapeHtml ile plain-text olarak güvenle render edilir.
+    // Zengin metin (bold, renk vb.) burada beklenmediğinden escapeHtml yeterli.
+    const title = escapeHtml(String(response.success_title || 'Teşekkürler!'));
+    const message = escapeHtml(String(response.success_message || 'Formunuz başarıyla gönderildi.'));
+
     this.container.innerHTML = `
       <div class="vb-form">
         <div class="vb-success">
           <div class="vb-success-icon">✅</div>
-          <div class="vb-success-title">${response.success_title || 'Teşekkürler!'}</div>
-          <div class="vb-success-msg">${response.success_message || 'Formunuz başarıyla gönderildi.'}</div>
+          <div class="vb-success-title">${title}</div>
+          <div class="vb-success-msg">${message}</div>
         </div>
         <div class="vb-badge" id="vb-success-badge"></div>
       </div>

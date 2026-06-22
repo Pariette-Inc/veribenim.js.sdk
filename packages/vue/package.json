@@ -33,7 +33,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@veribenim/core": "5.2.2"
+    "@veribenim/core": "workspace:*"
   },
   "peerDependencies": {
     "vue": ">=3.0.0"

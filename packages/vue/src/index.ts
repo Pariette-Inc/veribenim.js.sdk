@@ -1,15 +1,23 @@
-import { ref, readonly, inject, type App } from 'vue';
-import { Veribenim, type VeribenimConfig, type ConsentPreferences } from '@veribenim/core';
+import { ref, readonly, type App, type Ref } from 'vue';
+import {
+  Veribenim,
+  type VeribenimConfig,
+  type ConsentPreferences,
+} from '@veribenim/core';
+import {
+  VERIBENIM_KEY,
+  useVeribenim,
+  type VeribenimVueState,
+} from './context';
 
 export type { VeribenimConfig, ConsentPreferences } from '@veribenim/core';
+export { useVeribenim } from './context';
+export type { VeribenimVueState } from './context';
+export { ConsentBanner } from './ConsentBanner';
+export { VeribenimForm } from './VeribenimForm';
 
-const INJECTION_KEY = Symbol('veribenim');
-
-export interface VeribenimPluginState {
-  preferences: ConsentPreferences | null;
-  isConsented: boolean;
-  isLoaded: boolean;
-}
+/** Geriye dönük uyumluluk için takma ad. */
+export type VeribenimPluginState = VeribenimVueState;
 
 /**
  * Veribenim Vue 3 Plugin
@@ -32,73 +40,72 @@ export const VeribenimPlugin = {
     const isLoaded = ref(false);
 
     const client = new Veribenim(config, {
-      onAccept: (prefs) => { preferences.value = prefs; },
-      onDecline: (prefs) => { preferences.value = prefs; },
-      onChange: (prefs) => { preferences.value = prefs; },
+      onAccept: (prefs) => {
+        preferences.value = prefs;
+      },
+      onDecline: (prefs) => {
+        preferences.value = prefs;
+      },
+      onChange: (prefs) => {
+        preferences.value = prefs;
+      },
     });
 
     // Mevcut tercihleri yükle
     client.getPreferences().then((res) => {
-      if (res) preferences.value = res.preferences;
+      if (res) preferences.value = res.current_consents;
       isLoaded.value = true;
     });
 
-    const state = {
+    const state: VeribenimVueState = {
       client,
-      preferences: readonly(preferences),
-      isLoaded: readonly(isLoaded),
-      get isConsented() { return preferences.value !== null; },
+      preferences: readonly(preferences) as Readonly<
+        Ref<ConsentPreferences | null>
+      >,
+      isLoaded: readonly(isLoaded) as Readonly<Ref<boolean>>,
+      get isConsented() {
+        return preferences.value !== null;
+      },
 
       async accept(prefs?: Partial<ConsentPreferences>) {
         const fullPrefs: ConsentPreferences = {
-          necessary: true,
+          strictly_necessary: true,
+          functional: true,
           analytics: true,
           marketing: true,
-          preferences: true,
           ...prefs,
         };
         const res = await client.savePreferences(fullPrefs);
         if (res) {
-          preferences.value = res.preferences;
-          await client.logConsent({ action: 'accept_all', preferences: fullPrefs });
+          preferences.value = fullPrefs;
+          await client.logConsent({ action: 'accept_all', consents: fullPrefs });
         }
       },
 
       async decline() {
         const declined: ConsentPreferences = {
-          necessary: true,
+          strictly_necessary: true,
+          functional: false,
           analytics: false,
           marketing: false,
-          preferences: false,
         };
         const res = await client.savePreferences(declined);
         if (res) {
-          preferences.value = res.preferences;
-          await client.logConsent({ action: 'reject_all', preferences: declined });
+          preferences.value = declined;
+          await client.logConsent({ action: 'reject_all', consents: declined });
         }
       },
 
       async savePreferences(prefs: ConsentPreferences) {
         const res = await client.savePreferences(prefs);
         if (res) {
-          preferences.value = res.preferences;
-          await client.logConsent({ action: 'save_preferences', preferences: prefs });
+          preferences.value = prefs;
+          await client.logConsent({ action: 'save_preferences', consents: prefs });
         }
       },
     };
 
-    app.provide(INJECTION_KEY, state);
+    app.provide(VERIBENIM_KEY, state);
     app.config.globalProperties.$veribenim = state;
   },
 };
-
-/**
- * Vue Composable
- */
-export function useVeribenim() {
-  const state = inject(INJECTION_KEY);
-  if (!state) {
-    throw new Error('[Veribenim] useVeribenim() çağrısı VeribenimPlugin kurulmadan yapıldı');
-  }
-  return state;
-}
