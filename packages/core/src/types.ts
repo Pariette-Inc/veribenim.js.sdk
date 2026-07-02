@@ -40,6 +40,13 @@ export interface VeribenimConfig {
   /** Debug modu. Varsayılan: false */
   debug?: boolean;
   /**
+   * Google Consent Mode v2 entegrasyonu. Varsayılan: false.
+   * true ise init sırasında gtag('consent','default',...) gönderilir ve
+   * her rıza değişikliğinde (accept/reject/save) otomatik olarak
+   * gtag('consent','update',...) sinyali üretilir.
+   */
+  googleConsentMode?: boolean;
+  /**
    * @internal — Yalnızca ileri düzey kullanım.
    * Tam script URL'i. domain yerine bunu kullanarak override edebilirsiniz.
    */
@@ -55,6 +62,7 @@ export interface VeribenimInternalConfig {
   lang: 'tr' | 'en';
   debug: boolean;
   scriptUrl?: string;
+  googleConsentMode?: boolean;
 }
 
 export interface ImpressionPayload {
@@ -365,6 +373,27 @@ export interface DomainVerifyResponse {
   plan_name?: string;
   badge_url?: string;
   embed_badge_url?: string;
+}
+
+// -------------------------------------------------------------------------
+// Google Consent Mode v2
+// -------------------------------------------------------------------------
+
+/** Consent Mode v2 sinyal değeri. */
+export type GcmConsentValue = 'granted' | 'denied';
+
+/**
+ * Consent Mode v2 sinyal haritası.
+ * marketing → ad_*, analytics → analytics_storage,
+ * functional → functionality_storage, security_storage her zaman granted.
+ */
+export interface GcmConsentState {
+  ad_storage: GcmConsentValue;
+  analytics_storage: GcmConsentValue;
+  ad_user_data: GcmConsentValue;
+  ad_personalization: GcmConsentValue;
+  functionality_storage: GcmConsentValue;
+  security_storage: GcmConsentValue;
 }
 
 /** impressionPixelUrl seçenekleri (GET /api/impressions/{token}/pixel). */

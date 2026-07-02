@@ -1,5 +1,6 @@
 import { VeribenimApiClient } from './client';
 import { ScriptLoader } from './loader';
+import { setGcmDefaults, emitGcmSignals } from './gcm';
 import type {
   VeribenimConfig,
   VeribenimInternalConfig,
@@ -54,6 +55,12 @@ export type {
 export { VeribenimApiClient } from './client';
 export { FormRenderer } from './form-renderer';
 export { ScriptLoader, cleanDomainForFilename, getBundleUrl } from './loader';
+export {
+  setGcmDefaults,
+  emitGcmSignals,
+  mapPreferencesToGcm,
+  GCM_DEFAULT_STATE,
+} from './gcm';
 
 const DEFAULT_CONFIG: Omit<VeribenimInternalConfig, 'token'> = {
   apiUrl: 'https://live.veribenim.com',
@@ -88,8 +95,14 @@ export class Veribenim {
       debug: config.debug ?? false,
       apiUrl: config._apiUrl ?? 'https://live.veribenim.com',
       scriptUrl: config._scriptUrl,
+      googleConsentMode: config.googleConsentMode ?? false,
     };
     this.api = new VeribenimApiClient(this.config);
+
+    // Consent Mode v2 varsayılanları — banner gösterilmeden önce gönderilmeli
+    if (this.config.googleConsentMode) {
+      setGcmDefaults();
+    }
 
     if (events?.onAccept) this.onAccept(events.onAccept);
     if (events?.onDecline) this.onDecline(events.onDecline);
@@ -125,6 +138,11 @@ export class Veribenim {
 
   /** Callback'leri tetikle */
   emit(event: 'accept' | 'decline' | 'change', prefs?: ConsentPreferences): void {
+    // Consent Mode v2 aktifse rıza değişikliğini Google'a bildir
+    if (this.config.googleConsentMode && prefs) {
+      emitGcmSignals(prefs);
+    }
+
     switch (event) {
       case 'accept':
         this.callbacks.onAccept.forEach((cb) => prefs && cb(prefs));
@@ -160,6 +178,10 @@ export class Veribenim {
     consents: ConsentPreferences,
     sessionId?: string
   ): Promise<SavePreferencesResponse | null> {
+    // Consent Mode v2 aktifse güncel tercihleri Google'a bildir
+    if (this.config.googleConsentMode) {
+      emitGcmSignals(consents);
+    }
     return this.api.savePreferences(consents, sessionId);
   }
 
