@@ -12,6 +12,9 @@ export type ConsentAction =
   | 'visit'
   | 'exit';
 
+/** Platformun desteklediği banner/form dilleri. */
+export type VeribenimLang = 'tr' | 'en' | 'de' | 'fr' | 'es' | 'bg' | 'ar';
+
 /**
  * Çerez rıza durumu — platformun otoritatif kategori anahtarları.
  * (KAYNAK: veribenim.api PreferenceCenterController + CookieProviderSeeder)
@@ -36,7 +39,7 @@ export interface VeribenimConfig {
    */
   domain?: string;
   /** Banner dili. Varsayılan: 'tr' */
-  lang?: 'tr' | 'en';
+  lang?: VeribenimLang;
   /** Debug modu. Varsayılan: false */
   debug?: boolean;
   /**
@@ -59,7 +62,7 @@ export interface VeribenimInternalConfig {
   token: string;
   domain?: string;
   apiUrl: string;
-  lang: 'tr' | 'en';
+  lang: VeribenimLang;
   debug: boolean;
   scriptUrl?: string;
   googleConsentMode?: boolean;
@@ -296,9 +299,10 @@ export interface RenderFormOptions {
   };
   onSuccess?: (data: FormSubmitResponse) => void;
   onError?: (error: Error) => void;
-  locale?: 'tr' | 'en';
+  /** @deprecated `lang` kullanın. */
+  locale?: VeribenimLang;
   /** Form label/placeholder dilini belirler. API'den o dilde çözümlenmiş schema döner. */
-  lang?: string;
+  lang?: VeribenimLang | (string & {});
 }
 
 /**
@@ -402,4 +406,46 @@ export interface ImpressionPixelOptions {
   session_id?: string;
   referrer?: string;
   domain?: string;
+}
+
+// -------------------------------------------------------------------------
+// Özel olay takibi (Tracked Events) & IAB TCF vendor listesi
+// -------------------------------------------------------------------------
+
+/**
+ * Konsolda tanımlı bir özel olayın (tracked event) tetiklenme kaydı
+ * (POST /api/v/{token}/ce — sendBeacon uyumlu, 204 döner).
+ * Olay tanımları konsoldan yönetilir; 'eid' oradaki sayısal ID'dir.
+ */
+export interface TrackedEventHitPayload {
+  /** Konsoldaki olay tanımının sayısal ID'si — zorunlu */
+  eid: number;
+  /** session_id (UUID, max 36) — zorunlu */
+  sid: string;
+  /** visitor_id (hash, max 64) */
+  vid?: string;
+  /** Olayın gerçekleştiği sayfa URL'i; verilmezse window.location.href */
+  url?: string;
+  /** Tıklanan elementin metni (max 255) */
+  txt?: string;
+}
+
+/** IAB TCF v2.2 slim vendor kaydı (GET /api/public/vendors/{token}). */
+export interface IabVendor {
+  vendor_id: number;
+  name: string;
+  policy_url: string | null;
+  purposes: number[];
+  legitimate_interests: number[];
+  special_features: number[];
+  legal_basis: string | null;
+}
+
+export interface IabVendorsResponse {
+  status: boolean;
+  data: {
+    gvl_version: number;
+    purposes_meta: Record<string, { name: string; description?: string }> | null;
+    vendors: IabVendor[];
+  };
 }

@@ -27,6 +27,8 @@ import type {
   CookieScanResponse,
   DomainVerifyResponse,
   ImpressionPixelOptions,
+  TrackedEventHitPayload,
+  IabVendorsResponse,
 } from './types';
 
 export * from './types';
@@ -258,6 +260,22 @@ export class Veribenim {
     payload: Omit<AnalyticsHitPayload, 'url'> & { url?: string }
   ): Promise<boolean> {
     return this.api.trackPageview(payload);
+  }
+
+  /**
+   * Konsolda tanımlı özel olayın (tracked event) tetiklenmesini kaydet.
+   * POST /api/v/{token}/ce
+   */
+  trackEvent(payload: TrackedEventHitPayload): Promise<boolean> {
+    return this.api.trackEvent(payload);
+  }
+
+  /**
+   * Aktif IAB TCF v2.2 slim vendor listesini getir.
+   * GET /api/public/vendors/{token}
+   */
+  getVendors(): Promise<IabVendorsResponse | null> {
+    return this.api.getVendors();
   }
 
   /**

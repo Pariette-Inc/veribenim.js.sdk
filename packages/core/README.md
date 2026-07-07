@@ -70,16 +70,38 @@ await veribenim.submitDsar({
 
 ```ts
 // Mevcut tercihleri oku
-const result = await veribenim.getPreferences();
-console.log(result?.preferences); // { necessary, analytics, marketing, preferences }
+const result = await veribenim.getPreferences(sessionId);
+console.log(result?.current_consents);
+// { strictly_necessary, functional, analytics, marketing }
 
 // Tercihleri kaydet
-await veribenim.savePreferences({
-  necessary: true,
-  analytics: true,
-  marketing: false,
-  preferences: true,
+await veribenim.savePreferences(
+  {
+    strictly_necessary: true,
+    functional: true,
+    analytics: true,
+    marketing: false,
+  },
+  sessionId
+);
+
+// Tek kategori kontrolü
+const ok = await veribenim.hasConsent('analytics', sessionId);
+```
+
+## Özel Olay Takibi & IAB TCF
+
+```ts
+// Konsolda tanımlı bir özel olayı (tracked event) programatik tetikle
+await veribenim.trackEvent({
+  eid: 7,            // Konsol → Özel Olaylar'daki olay ID'si
+  sid: sessionId,    // ziyaretçi session UUID
+  txt: 'Satın Al',   // opsiyonel: element metni
 });
+
+// Site için aktif IAB TCF v2.2 vendor listesi
+const vendors = await veribenim.getVendors();
+console.log(vendors?.data.gvl_version, vendors?.data.vendors);
 ```
 
 ## Framework Paketleri

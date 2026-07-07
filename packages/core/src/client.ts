@@ -17,6 +17,8 @@ import type {
   CookieScanResponse,
   DomainVerifyResponse,
   ImpressionPixelOptions,
+  TrackedEventHitPayload,
+  IabVendorsResponse,
 } from './types';
 import { FormRenderer } from './form-renderer';
 
@@ -300,6 +302,71 @@ export class VeribenimApiClient {
       this.log('trackPageview failed:', err);
       return false;
     }
+  }
+
+  /**
+   * Konsolda tanımlı bir özel olayın (tracked event) tetiklenmesini kaydeder.
+   * POST /api/v/{token}/ce — tarayıcıda sendBeacon, yoksa keepalive fetch.
+   * Olay tanımları konsoldan yapılır; 'eid' oradaki sayısal ID'dir.
+   */
+  async trackEvent(payload: TrackedEventHitPayload): Promise<boolean> {
+    const data: TrackedEventHitPayload = {
+      ...payload,
+      url:
+        payload.url ??
+        (typeof window !== 'undefined' ? window.location.href : undefined),
+    };
+
+    if (!data.eid || !data.sid) {
+      this.log('trackEvent: "eid" ve "sid" zorunludur');
+      return false;
+    }
+
+    const url = `${this.baseUrl}/api/v/${this.config.token}/ce`;
+    const params = new URLSearchParams();
+    params.set('eid', String(data.eid));
+    params.set('sid', data.sid);
+    if (data.vid) params.set('vid', data.vid);
+    if (data.url) params.set('url', data.url);
+    if (data.txt) params.set('txt', data.txt);
+
+    // URLSearchParams ile sendBeacon form-urlencoded gönderir; backend bunu
+    // hem otomatik parse hem raw-body fallback ile karşılar.
+    if (
+      typeof navigator !== 'undefined' &&
+      typeof navigator.sendBeacon === 'function'
+    ) {
+      try {
+        if (navigator.sendBeacon(url, params)) return true;
+      } catch {
+        /* fetch'e düş */
+      }
+    }
+
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString(),
+        keepalive: true,
+      });
+      return res.ok;
+    } catch (err) {
+      this.log('trackEvent failed:', err);
+      return false;
+    }
+  }
+
+  /**
+   * Site için aktif IAB TCF v2.2 slim vendor listesini döner
+   * (banner'ın TCF modu ve şeffaflık katmanı için).
+   * GET /api/public/vendors/{token}
+   */
+  async getVendors(): Promise<IabVendorsResponse | null> {
+    return this.request<IabVendorsResponse>(
+      'GET',
+      `/api/public/vendors/${this.config.token}`
+    );
   }
 
   /**

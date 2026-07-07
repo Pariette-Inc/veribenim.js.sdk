@@ -1,5 +1,22 @@
 # @veribenim/nextjs
 
+## 6.1.0
+
+### Minor Changes
+
+- Özel olay takibi ve IAB TCF vendor listesi desteği
+
+  - `trackEvent()` — konsolda tanımlı özel olayları (tracked events) programatik tetikleme (`POST /api/v/{token}/ce`, sendBeacon uyumlu)
+  - `getVendors()` — site için aktif IAB TCF v2.2 slim vendor listesi (`GET /api/public/vendors/{token}`)
+  - `lang` tipi platformun desteklediği 7 dile genişletildi (`tr, en, de, fr, es, bg, ar`)
+  - README örnekleri v6 rıza veri modeliyle (`current_consents`, `strictly_necessary/functional/analytics/marketing`) güncellendi
+
+### Patch Changes
+
+- Updated dependencies
+  - @veribenim/core@6.1.0
+  - @veribenim/react@6.1.0
+
 ## 6.0.0
 
 ### Major Changes

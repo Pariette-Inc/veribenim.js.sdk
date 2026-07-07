@@ -216,6 +216,65 @@ describe('VeribenimApiClient', () => {
     });
   });
 
+  describe('trackEvent', () => {
+    it('eid veya sid eksikse istek atmadan false döner', async () => {
+      const fetchMock = mockFetchOnce({});
+
+      const ok = await client.trackEvent({ eid: 0, sid: '' });
+
+      expect(ok).toBe(false);
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('sendBeacon yoksa form-urlencoded keepalive fetch ile gönderir', async () => {
+      const fetchMock = jest.fn().mockResolvedValue({ ok: true, status: 204 });
+      (globalThis as any).fetch = fetchMock;
+
+      const ok = await client.trackEvent({ eid: 7, sid: 'sid-1', txt: 'Satın Al' });
+
+      expect(ok).toBe(true);
+      const [url, init] = fetchMock.mock.calls[0];
+      expect(url).toBe('https://live.veribenim.com/api/v/test-token-32-char/ce');
+      expect(init.keepalive).toBe(true);
+      expect(init.headers['Content-Type']).toBe('application/x-www-form-urlencoded');
+      const body = new URLSearchParams(init.body);
+      expect(body.get('eid')).toBe('7');
+      expect(body.get('sid')).toBe('sid-1');
+      expect(body.get('txt')).toBe('Satın Al');
+      expect(body.get('url')).toBe(window.location.href);
+    });
+
+    it('sendBeacon başarılıysa fetch çağrılmaz', async () => {
+      const beacon = jest.fn().mockReturnValue(true);
+      (navigator as any).sendBeacon = beacon;
+      const fetchMock = mockFetchOnce({});
+
+      const ok = await client.trackEvent({ eid: 7, sid: 'sid-1' });
+
+      expect(ok).toBe(true);
+      expect(beacon).toHaveBeenCalledTimes(1);
+      expect(fetchMock).not.toHaveBeenCalled();
+
+      delete (navigator as any).sendBeacon;
+    });
+  });
+
+  describe('getVendors', () => {
+    it('public vendors endpoint\'ini çağırır ve yanıtı döner', async () => {
+      const fetchMock = mockFetchOnce({
+        status: true,
+        data: { gvl_version: 42, purposes_meta: null, vendors: [] },
+      });
+
+      const result = await client.getVendors();
+
+      expect(fetchMock.mock.calls[0][0]).toBe(
+        'https://live.veribenim.com/api/public/vendors/test-token-32-char'
+      );
+      expect(result?.data.gvl_version).toBe(42);
+    });
+  });
+
   describe('verifyDomain', () => {
     it('domain\'i temizleyip public verify endpoint\'ini çağırır', async () => {
       const fetchMock = mockFetchOnce({ found: true, domain: 'example.com' });
