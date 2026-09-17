@@ -1,6 +1,8 @@
 import { VeribenimApiClient } from './client';
 import { ScriptLoader } from './loader';
 import { setGcmDefaults, emitGcmSignals } from './gcm';
+import { getTCData } from './tcf';
+import type { TcfData } from './tcf';
 import type {
   VeribenimConfig,
   VeribenimInternalConfig,
@@ -63,6 +65,16 @@ export {
   mapPreferencesToGcm,
   GCM_DEFAULT_STATE,
 } from './gcm';
+// IAB TCF 2.2 — yalnızca TCF açık sitelerde `window.__tcfapi` vardır;
+// diğer sitelerde bu yardımcılar null/no-op döner (hata değil).
+export {
+  isTcfAvailable,
+  ping as tcfPing,
+  getTCData,
+  onTcfChange,
+  waitForTcfDecision,
+} from './tcf';
+export type { TcfData, TcfEventStatus, TcfPingReturn } from './tcf';
 
 const DEFAULT_CONFIG: Omit<VeribenimInternalConfig, 'token'> = {
   apiUrl: 'https://live.veribenim.com',
@@ -276,6 +288,16 @@ export class Veribenim {
    */
   getVendors(): Promise<IabVendorsResponse | null> {
     return this.api.getVendors();
+  }
+
+  /**
+   * Sayfadaki CMP'nin güncel TCData'sı (IAB TCF 2.2).
+   *
+   * Ziyaretçi henüz karar vermediyse veya sitede TCF kapalıysa `null` döner.
+   * Kararı beklemek için `waitForTcfDecision()` kullanın.
+   */
+  getTCData(): Promise<TcfData | null> {
+    return getTCData();
   }
 
   /**

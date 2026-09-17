@@ -361,7 +361,44 @@ await veribenim.withdrawConsent(sessionId: string): Promise<boolean>
 
 // DSAR (Data Subject Access Request)
 await veribenim.submitDsar(payload: DsarPayload): Promise<DsarResponse | null>
+
+// IAB TCF 2.2 — güncel TCData (karar verilmemişse null)
+await veribenim.getTCData(): Promise<TcfData | null>
 ```
+
+#### IAB TCF 2.2
+
+TCF katmanı yalnızca (a) sitede TCF açıkken ve (b) platformda kayıtlı bir IAB
+CMP kimliği varken yüklenir. KVKK-only bir sitede `window.__tcfapi` **hiç
+tanımlı olmaz** — aşağıdaki yardımcılar o durumda `null` / no-op döner.
+Bu bir hata değildir, kontrol etmeniz gereken normal durumdur.
+
+```typescript
+import {
+  isTcfAvailable,
+  getTCData,
+  tcfPing,
+  onTcfChange,
+  waitForTcfDecision,
+} from '@veribenim/core';
+
+if (isTcfAvailable()) {
+  // Ziyaretçi karar verene kadar bekle (varsayılan 10 sn)
+  const data = await waitForTcfDecision();
+  if (data) {
+    console.log(data.tcString);      // IAB kütüphaneleriyle çözülebilir
+    console.log(data.addtlConsent);  // Google Additional Consent (varsa)
+  }
+
+  // Değişiklikleri dinle; dönen fonksiyon dinleyiciyi kaldırır
+  const off = onTcfChange((d) => {
+    if (d.eventStatus === 'useractioncomplete') refreshAds(d.tcString);
+  });
+}
+```
+
+`getTCData()` ziyaretçi **henüz karar vermediyse** `null` döner. Boş bir
+TC String'i "rıza yok" diye yorumlamak yerine kararı beklemek doğrudur.
 
 #### Türleri
 
