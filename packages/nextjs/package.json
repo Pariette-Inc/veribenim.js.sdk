@@ -20,6 +20,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
+    },
+    "./proxy": {
+      "types": "./dist/proxy.d.ts",
+      "import": "./dist/proxy.mjs",
+      "require": "./dist/proxy.js"
     }
   },
   "files": [
@@ -27,8 +32,8 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format cjs,esm --dts --clean",
-    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "build": "tsup src/index.ts src/proxy.ts --format cjs,esm --dts --clean",
+    "dev": "tsup src/index.ts src/proxy.ts --format cjs,esm --dts --watch",
     "lint": "tsc --noEmit",
     "clean": "rm -rf dist"
   },

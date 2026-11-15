@@ -37,6 +37,8 @@
 export {
   VeribenimProvider,
   VeribenimForm,
+  VeribenimBundleForm,
+  useVeribenimReady,
   ConsentBanner,
   useVeribenim,
   useConsentCategory,
@@ -47,11 +49,15 @@ export {
 export type {
   VeribenimProviderProps,
   VeribenimFormProps,
+  VeribenimBundleFormProps,
   ConsentBannerProps,
   VeribenimContextValue,
   VeribenimConfig,
   ConsentPreferences,
 } from '@veribenim/react';
+
+// Birinci taraf rıza proxy'si sunucu modülündedir: '@veribenim/nextjs/proxy'
+// (bu dosya 'use client' olduğu için buradan dışa aktarılmaz).
 
 /**
  * Next.js Script bileşeni ile script yükleme için helper

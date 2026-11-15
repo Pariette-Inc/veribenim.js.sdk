@@ -1,6 +1,7 @@
 import type { VeribenimInternalConfig } from './types';
+import { DEFAULT_ENDPOINTS } from './endpoints';
 
-const DEFAULT_BUNDLE_BASE = 'https://bundles.veribenim.com';
+const DEFAULT_BUNDLE_BASE = DEFAULT_ENDPOINTS.bundleBaseUrl;
 
 /**
  * Domain'den bundle dosya adını türetir.
@@ -50,7 +51,7 @@ export class ScriptLoader {
       if (this.config.scriptUrl) {
         src = this.config.scriptUrl;
       } else if (this.config.domain) {
-        src = getBundleUrl(this.config.domain);
+        src = getBundleUrl(this.config.domain, this.config.bundleBaseUrl);
       } else {
         reject(new Error('[Veribenim] Script yüklemek için domain veya _scriptUrl gerekli'));
         return;

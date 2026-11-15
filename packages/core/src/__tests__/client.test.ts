@@ -69,20 +69,29 @@ describe('VeribenimApiClient', () => {
         marketing: false,
       };
 
-      const ok = await client.logConsent({ action: 'accept_all', consents });
+      const ok = await client.logConsent({ action: 'accept_all', consents, session_id: 's-1' });
 
       expect(ok).toBe(true);
       const [url, init] = fetchMock.mock.calls[0];
       expect(url).toBe('https://live.veribenim.com/api/consents/test-token-32-char/log');
-      expect(JSON.parse(init.body)).toEqual({ action: 'accept_all', consents });
+      expect(JSON.parse(init.body)).toEqual({ action: 'accept_all', consents, session_id: 's-1' });
     });
 
     it('HTTP hatasında false döner', async () => {
       mockFetchOnce({ error: 'bad' }, false, 422);
 
+      const ok = await client.logConsent({ action: 'reject_all', session_id: 's-1' });
+
+      expect(ok).toBe(false);
+    });
+
+    it('session_id yoksa API\'ye gitmez (API alanı zorunlu tutar)', async () => {
+      const fetchMock = mockFetchOnce({ status: true });
+
       const ok = await client.logConsent({ action: 'reject_all' });
 
       expect(ok).toBe(false);
+      expect(fetchMock).not.toHaveBeenCalled();
     });
   });
 
@@ -140,19 +149,114 @@ describe('VeribenimApiClient', () => {
       expect(JSON.parse(init.body)).toEqual({ form_name: 'contact', consented: true });
     });
 
-    it('DSAR başvurusunu doğru endpoint\'e gönderir', async () => {
-      const fetchMock = mockFetchOnce({ id: '1', request_type: 'erasure', status: 'pending' });
+    it('DSAR başvurusunu API alan adlarıyla gönderir', async () => {
+      const fetchMock = mockFetchOnce({
+        status: true,
+        message: 'Talebiniz alındı.',
+        data: { id: 1, request_type: 'Silme', due_at: '2026-12-15T00:00:00Z' },
+      });
 
       const result = await client.submitDsar({
         request_type: 'erasure',
-        full_name: 'Ahmet Yılmaz',
+        first_name: 'Ahmet',
+        last_name: 'Yılmaz',
         email: 'ahmet@example.com',
+        phone: '+90 555',
+        message: 'Silin',
       });
 
+      const [url, init] = fetchMock.mock.calls[0];
+      expect(url).toBe('https://live.veribenim.com/api/dsar/test-token-32-char');
+      expect(JSON.parse(init.body)).toEqual({
+        first_name: 'Ahmet',
+        last_name: 'Yılmaz',
+        email: 'ahmet@example.com',
+        request_type: 'erasure',
+        phone: '+90 555',
+        message: 'Silin',
+      });
+      expect(result?.data.id).toBe(1);
+    });
+
+    it('eski full_name/description/automated alanlarını API adlarına çevirir', async () => {
+      const fetchMock = mockFetchOnce({ status: true, message: '', data: { id: 2, request_type: '', due_at: '' } });
+
+      await client.submitDsar({
+        request_type: 'automated',
+        full_name: 'Ahmet Can Yılmaz',
+        email: 'a@b.com',
+        description: 'Açıklama',
+        attachment_url: 'https://x',
+      });
+
+      expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
+        first_name: 'Ahmet Can',
+        last_name: 'Yılmaz',
+        email: 'a@b.com',
+        request_type: 'automated_decision',
+        message: 'Açıklama',
+      });
+    });
+
+    it('soyad çıkarılamıyorsa istek atmaz', async () => {
+      const fetchMock = mockFetchOnce({});
+
+      expect(await client.submitDsar({ request_type: 'access', full_name: 'Ahmet', email: 'a@b.com' })).toBeNull();
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('withdrawConsent / getConsentHistory', () => {
+    it('tercih merkezi withdraw ucuna session_id gönderir', async () => {
+      const fetchMock = mockFetchOnce({ status: true, message: 'ok' });
+
+      expect(await client.withdrawConsent('s-9')).toBe(true);
+      const [url, init] = fetchMock.mock.calls[0];
+      expect(url).toBe('https://live.veribenim.com/api/preferences/test-token-32-char/withdraw');
+      expect(init.method).toBe('POST');
+      expect(JSON.parse(init.body)).toEqual({ session_id: 's-9' });
+    });
+
+    it('session_id yoksa istek atmaz', async () => {
+      const fetchMock = mockFetchOnce({ status: true });
+      expect(await client.withdrawConsent('')).toBe(false);
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('geçmiş ucunu çağırır', async () => {
+      const fetchMock = mockFetchOnce({ status: true, data: {} });
+      await client.getConsentHistory('a b');
       expect(fetchMock.mock.calls[0][0]).toBe(
-        'https://live.veribenim.com/api/dsar/test-token-32-char'
+        'https://live.veribenim.com/api/preferences/test-token-32-char/history?session_id=a%20b'
       );
-      expect(result?.request_type).toBe('erasure');
+    });
+  });
+
+  describe('savePreferences session_id', () => {
+    it('session_id yoksa API\'ye gitmez', async () => {
+      const fetchMock = mockFetchOnce({ status: true });
+
+      expect(
+        await client.savePreferences({ strictly_necessary: true, functional: false, analytics: false, marketing: false })
+      ).toBeNull();
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('submitForm dosya alanları', () => {
+    it('tek dosyayı ve çoklu seçimi `alan[]` adıyla gönderir, slug kodlanır', async () => {
+      const fetchMock = mockFetchOnce({ success: true, message: 'ok' });
+      const file = new File(['x'], 'kimlik.pdf', { type: 'application/pdf' });
+
+      await client.submitForm('iletişim formu', { 'u-file': file, 'u-multi': ['a', 'b'], 'u-name': 'Ali' });
+
+      const [url, init] = fetchMock.mock.calls[0];
+      expect(url).toBe('https://live.veribenim.com/api/public/forms/test-token-32-char/ileti%C5%9Fim%20formu');
+      const fd = init.body as FormData;
+      expect(fd.getAll('u-file[]')).toHaveLength(1);
+      expect(fd.get('u-file')).toBeNull();
+      expect(fd.getAll('u-multi[]')).toEqual(['a', 'b']);
+      expect(fd.get('u-name')).toBe('Ali');
     });
   });
 

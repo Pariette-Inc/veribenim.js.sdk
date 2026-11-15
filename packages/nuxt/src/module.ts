@@ -1,5 +1,5 @@
 import { defineNuxtModule, addPlugin, createResolver, addImports, addComponent } from '@nuxt/kit';
-import type { VeribenimConfig } from '@veribenim/core';
+import { DEFAULT_ENDPOINTS, type VeribenimConfig } from '@veribenim/core';
 
 export interface ModuleOptions extends Omit<VeribenimConfig, 'token'> {
   /**
@@ -9,7 +9,10 @@ export interface ModuleOptions extends Omit<VeribenimConfig, 'token'> {
   token: string;
   /** Banner script'ini otomatik yükle. Varsayılan: true */
   autoLoad?: boolean;
-  /** @internal API base URL override. Varsayılan: https://live.veribenim.com */
+  /**
+   * API tabanı. Varsayılan: https://live.veribenim.com.
+   * Kısayol: `endpoints.apiUrl` ile aynıdır (On-Prem için `endpoints` tercih edin).
+   */
   apiUrl?: string;
 }
 
@@ -41,7 +44,7 @@ export default defineNuxtModule<ModuleOptions>({
     lang: 'tr',
     autoLoad: true,
     debug: false,
-    apiUrl: 'https://live.veribenim.com',
+    apiUrl: DEFAULT_ENDPOINTS.apiUrl,
   },
 
   setup(options, nuxt) {
@@ -49,12 +52,18 @@ export default defineNuxtModule<ModuleOptions>({
       console.warn('[Veribenim] token ayarlanmamış. nuxt.config.ts\'de veribenim.token\'ı belirtin.');
     }
 
-    // Runtime config'e token'ı ekle
+    // Runtime config'e (TARAYICIYA AÇIK — buraya sır koymayın) yapılandırmayı ekle.
+    // `endpoints` Veribenim çekirdeğinin okuduğu alandır; eskiden `apiUrl`
+    // çekirdeğe hiç ulaşmıyordu (çekirdek `_apiUrl`/`endpoints` okur).
     nuxt.options.runtimeConfig.public.veribenim = {
       token: options.token,
       domain: options.domain,
       lang: options.lang,
       apiUrl: options.apiUrl,
+      endpoints: {
+        ...options.endpoints,
+        apiUrl: options.endpoints?.apiUrl || options.apiUrl || DEFAULT_ENDPOINTS.apiUrl,
+      },
       autoLoad: options.autoLoad,
       debug: options.debug,
     };
@@ -72,6 +81,10 @@ export default defineNuxtModule<ModuleOptions>({
       name: 'useVeribenim',
       from: resolver.resolve('./runtime/composables'),
     });
+    addImports({
+      name: 'useVeribenimReady',
+      from: resolver.resolve('./runtime/composables'),
+    });
 
     // Bileşenleri otomatik kaydet: <ConsentBanner /> ve <VeribenimForm />
     addComponent({
@@ -83,6 +96,12 @@ export default defineNuxtModule<ModuleOptions>({
       name: 'VeribenimForm',
       filePath: '@veribenim/vue',
       export: 'VeribenimForm',
+    });
+    // Formu sayfadaki bundle ile çizer (VeribenimReady'i bekler)
+    addComponent({
+      name: 'VeribenimBundleForm',
+      filePath: '@veribenim/vue',
+      export: 'VeribenimBundleForm',
     });
   },
 });

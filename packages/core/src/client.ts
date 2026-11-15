@@ -19,8 +19,34 @@ import type {
   ImpressionPixelOptions,
   TrackedEventHitPayload,
   IabVendorsResponse,
+  ConsentHistoryResponse,
 } from './types';
 import { FormRenderer } from './form-renderer';
+
+/** DsarPayload'ı API gövdesine çevirir; ad/soyad yoksa null. */
+export function toDsarBody(payload: DsarPayload): Record<string, string> | null {
+  let first = payload.first_name?.trim() ?? '';
+  let last = payload.last_name?.trim() ?? '';
+  if ((!first || !last) && payload.full_name) {
+    const parts = payload.full_name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      last = parts.pop() as string;
+      first = parts.join(' ');
+    }
+  }
+  if (!first || !last) return null;
+
+  const body: Record<string, string> = {
+    first_name: first,
+    last_name: last,
+    email: payload.email,
+    request_type: payload.request_type === 'automated' ? 'automated_decision' : payload.request_type,
+  };
+  if (payload.phone) body.phone = payload.phone;
+  const message = payload.message ?? payload.description;
+  if (message) body.message = message;
+  return body;
+}
 
 export class VeribenimApiClient {
   constructor(private readonly config: VeribenimInternalConfig) {}
@@ -84,6 +110,11 @@ export class VeribenimApiClient {
    * POST /api/consents/{token}/log
    */
   async logConsent(payload: ConsentLogPayload): Promise<boolean> {
+    if (!payload.session_id) {
+      // API: session_id => required (ConsentController::log). İstek 422 alırdı.
+      this.log('logConsent: session_id zorunlu — istek atılmadı');
+      return false;
+    }
     const result = await this.request(
       'POST',
       `/api/consents/${this.config.token}/log`,
@@ -112,10 +143,44 @@ export class VeribenimApiClient {
     consents: ConsentPreferences,
     sessionId?: string
   ): Promise<SavePreferencesResponse | null> {
+    if (!sessionId) {
+      // API: session_id => required (PreferenceCenterController::save).
+      this.log('savePreferences: session_id zorunlu — istek atılmadı');
+      return null;
+    }
     return this.request<SavePreferencesResponse>(
       'POST',
       `/api/preferences/${this.config.token}`,
       { consents, session_id: sessionId }
+    );
+  }
+
+  /**
+   * Rızayı geri çeker (KVKK Md.11/1-e, GDPR Md.7/3).
+   * POST /api/preferences/{token}/withdraw — session_id zorunlu.
+   */
+  async withdrawConsent(sessionId: string): Promise<boolean> {
+    if (!sessionId) {
+      this.log('withdrawConsent: session_id zorunlu — istek atılmadı');
+      return false;
+    }
+    const res = await this.request<{ status: boolean }>(
+      'POST',
+      `/api/preferences/${this.config.token}/withdraw`,
+      { session_id: sessionId }
+    );
+    return !!res?.status;
+  }
+
+  /**
+   * Ziyaretçinin kendi rıza geçmişi (KVKK Md.11 / GDPR Md.15).
+   * GET /api/preferences/{token}/history?session_id=...
+   */
+  async getConsentHistory(sessionId: string): Promise<ConsentHistoryResponse | null> {
+    if (!sessionId) return null;
+    return this.request<ConsentHistoryResponse>(
+      'GET',
+      `/api/preferences/${this.config.token}/history?session_id=${encodeURIComponent(sessionId)}`
     );
   }
 
@@ -152,17 +217,19 @@ export class VeribenimApiClient {
    * @example
    * await client.submitDsar({
    *   request_type: 'erasure',
-   *   full_name: 'Ahmet Yılmaz',
+   *   first_name: 'Ahmet',
+   *   last_name: 'Yılmaz',
    *   email: 'ahmet@example.com',
-   *   description: 'Tüm verilerimin silinmesini talep ediyorum.',
+   *   message: 'Tüm verilerimin silinmesini talep ediyorum.',
    * });
    */
   async submitDsar(payload: DsarPayload): Promise<DsarResponse | null> {
-    return this.request<DsarResponse>(
-      'POST',
-      `/api/dsar/${this.config.token}`,
-      payload
-    );
+    const body = toDsarBody(payload);
+    if (!body) {
+      this.log('submitDsar: first_name ve last_name zorunlu (full_name en az iki kelime olmalı)');
+      return null;
+    }
+    return this.request<DsarResponse>('POST', `/api/dsar/${this.config.token}`, body);
   }
 
   /**
@@ -174,7 +241,7 @@ export class VeribenimApiClient {
   async getFormSchema(slug: string, lang?: string): Promise<FormSchema> {
     const qs = lang ? `?lang=${encodeURIComponent(lang)}` : '';
     const response = await fetch(
-      `${this.baseUrl}/api/public/forms/${this.config.token}/${slug}${qs}`,
+      `${this.baseUrl}/api/public/forms/${this.config.token}/${encodeURIComponent(slug)}${qs}`,
       {
         headers: { 'Content-Type': 'application/json' },
       }
@@ -201,12 +268,16 @@ export class VeribenimApiClient {
     if (hasFiles) {
       const formData = new FormData();
       for (const [key, value] of Object.entries(data)) {
+        // API dosya alanını dizi olarak doğrular ('array', 'max:5') —
+        // tek dosya da `alan[]` adıyla gider. Çoklu seçim de dizi olarak.
         if (value instanceof FileList) {
           for (let i = 0; i < value.length; i++) {
             formData.append(`${key}[]`, value[i]);
           }
         } else if (value instanceof File) {
-          formData.append(key, value);
+          formData.append(`${key}[]`, value);
+        } else if (Array.isArray(value)) {
+          value.forEach((v) => formData.append(`${key}[]`, String(v)));
         } else if (value !== null && value !== undefined) {
           formData.append(key, String(value));
         }
@@ -218,7 +289,7 @@ export class VeribenimApiClient {
     }
 
     const response = await fetch(
-      `${this.baseUrl}/api/public/forms/${this.config.token}/${slug}`,
+      `${this.baseUrl}/api/public/forms/${this.config.token}/${encodeURIComponent(slug)}`,
       { method: 'POST', headers, body }
     );
 

@@ -1,0 +1,37 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "rootDir": "..",
+    "declaration": false,
+    "declarationMap": false,
+    "baseUrl": ".",
+    "paths": {
+      "react": [
+        "../react/node_modules/@types/react"
+      ],
+      "react/jsx-runtime": [
+        "../react/node_modules/@types/react/jsx-runtime"
+      ],
+      "react-dom/client": [
+        "../react/node_modules/@types/react-dom/client"
+      ],
+      "vue": [
+        "../vue/node_modules/vue"
+      ],
+      "@veribenim/core": [
+        "src/index.ts"
+      ]
+    }
+  },
+  "include": [
+    "src",
+    "../react/src",
+    "../vue/src",
+    "../nextjs/src"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

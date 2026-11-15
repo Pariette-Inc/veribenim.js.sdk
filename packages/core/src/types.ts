@@ -3,6 +3,8 @@
  * Token = Environment token (32 karakter, her site için unique)
  */
 
+import type { VeribenimEndpoints } from './endpoints';
+
 export type ConsentAction =
   | 'accept_all'
   | 'reject_all'
@@ -35,7 +37,8 @@ export interface VeribenimConfig {
   /**
    * Site domain'i — Bundle script URL'ini oluşturmak için kullanılır.
    * Örn: 'claude.com', 'https://www.example.com'
-   * Belirtilirse script URL: https://bundles.veribenim.com/{cleanDomain}.js
+   * Belirtilirse script URL: {bundleBaseUrl}/{cleanDomain}.js
+   * (varsayılan: https://bundles.veribenim.com/{cleanDomain}.js)
    */
   domain?: string;
   /** Banner dili. Varsayılan: 'tr' */
@@ -54,8 +57,14 @@ export interface VeribenimConfig {
    * Tam script URL'i. domain yerine bunu kullanarak override edebilirsiniz.
    */
   _scriptUrl?: string;
-  /** @internal */
+  /** @internal — `endpoints.apiUrl` ile aynı; geriye uyumluluk için önceliklidir. */
   _apiUrl?: string;
+  /**
+   * Adresler (On-Prem). Varsayılanlar bugünkü bulut adresleridir:
+   * apiUrl https://live.veribenim.com, bundleBaseUrl https://bundles.veribenim.com,
+   * webUrl https://veribenim.com. Yalnızca farklı olanı verin.
+   */
+  endpoints?: Partial<VeribenimEndpoints>;
 }
 
 export interface VeribenimInternalConfig {
@@ -66,6 +75,10 @@ export interface VeribenimInternalConfig {
   debug: boolean;
   scriptUrl?: string;
   googleConsentMode?: boolean;
+  /** Bundle tabanı; verilmezse DEFAULT_ENDPOINTS.bundleBaseUrl. */
+  bundleBaseUrl?: string;
+  /** Panel adresi; verilmezse DEFAULT_ENDPOINTS.webUrl. */
+  webUrl?: string;
 }
 
 export interface ImpressionPayload {
@@ -78,6 +91,10 @@ export interface ConsentLogPayload {
   action: ConsentAction;
   /** Kategori bazlı rıza. Platform `consents` alanını bekler. */
   consents?: ConsentPreferences;
+  /**
+   * Ziyaretçi oturum kimliği. API'de ZORUNLU (`session_id: required`);
+   * verilmezse SDK isteği hiç atmaz ve `false` döner.
+   */
   session_id?: string;
   url?: string;
 }
@@ -111,12 +128,20 @@ export interface PreferencesResponse {
   active_regulations?: string[];
   categories: ConsentCategoryInfo[];
   current_consents: ConsentPreferences | null;
+  /** Taşıyıcı kapsamı ('web' | 'mobile' …) */
+  platform?: string;
 }
 
 /** POST /api/preferences/{token} yanıtı (yalnızca durum + mesaj döner). */
 export interface SavePreferencesResponse {
   status: boolean;
   message: string;
+}
+
+/** GET /api/preferences/{token}/history yanıtı (IP gibi alanlar dönmez). */
+export interface ConsentHistoryResponse {
+  status: boolean;
+  data: Record<string, unknown>;
 }
 
 export type ConsentCallback = (preferences: ConsentPreferences) => void;
@@ -142,12 +167,18 @@ export interface FormConsentPayload {
   metadata?: Record<string, unknown>;
 }
 
+/** POST /api/form-consents/{token} yanıtı (201): `{ success: true, id }`. */
 export interface FormConsentResponse {
-  id: string;
-  form_name: string;
-  consented: boolean;
-  ip_address: string;
-  created_at: string;
+  success: boolean;
+  id: string | number;
+  /** @deprecated API bu alanları döndürmez. */
+  form_name?: string;
+  /** @deprecated API bu alanları döndürmez. */
+  consented?: boolean;
+  /** @deprecated API bu alanları döndürmez. */
+  ip_address?: string;
+  /** @deprecated API bu alanları döndürmez. */
+  created_at?: string;
 }
 
 // -------------------------------------------------------------------------
@@ -161,26 +192,48 @@ export type DsarRequestType =
   | 'restriction'     // İşleme kısıtlama
   | 'portability'     // Taşınabilirlik
   | 'objection'       // İtiraz
-  | 'automated';      // Otomatik karar itirazı
+  | 'automated_decision' // Otomatik karar itirazı (API adı)
+  | 'automated';      // @deprecated — 'automated_decision'a çevrilir
 
+/**
+ * POST /api/dsar/{token} gövdesi (DsarController::store):
+ * first_name, last_name, email, phone?, request_type, message?
+ */
 export interface DsarPayload {
   request_type: DsarRequestType;
-  /** Başvuranın adı soyadı */
-  full_name: string;
+  /** Ad (en fazla 100) */
+  first_name?: string;
+  /** Soyad (en fazla 100) */
+  last_name?: string;
   /** İletişim e-posta adresi */
   email: string;
-  /** Başvuru açıklaması (opsiyonel) */
+  /** Telefon (rakam, boşluk, + - ( ) ) */
+  phone?: string;
+  /** Başvuru açıklaması (en fazla 3000) */
+  message?: string;
+  /**
+   * @deprecated `first_name` + `last_name` kullanın. Verilirse son kelime
+   * soyad sayılarak bölünür.
+   */
+  full_name?: string;
+  /** @deprecated `message` kullanın. */
   description?: string;
-  /** İsteğe bağlı ek belge URL'i */
+  /** @deprecated API bu alanı kabul etmez; gönderilmez. */
   attachment_url?: string;
 }
 
+/** POST /api/dsar/{token} yanıtı (201). */
 export interface DsarResponse {
-  id: string;
-  request_type: DsarRequestType;
-  status: 'pending' | 'in_progress' | 'resolved' | 'rejected' | 'cancelled';
-  deadline: string; // ISO8601 — 30 günlük yasal süre
-  created_at: string;
+  status: boolean;
+  message: string;
+  data: {
+    id: string | number;
+    /** Talep tipinin okunur etiketi */
+    request_type: string;
+    /** Yasal yanıt süresi sonu (ISO8601) */
+    due_at: string;
+    kvk_appeal_info?: Record<string, string>;
+  };
 }
 
 // -------------------------------------------------------------------------
@@ -286,6 +339,7 @@ export interface FormSubmitPayload {
 }
 
 export interface FormSubmitResponse {
+  success?: boolean;
   message: string;
   success_title?: string;
   success_message?: string;

@@ -3,6 +3,10 @@ import { ScriptLoader } from './loader';
 import { setGcmDefaults, emitGcmSignals } from './gcm';
 import { getTCData } from './tcf';
 import type { TcfData } from './tcf';
+import { DEFAULT_ENDPOINTS, resolveEndpoints } from './endpoints';
+import type { VeribenimEndpoints } from './endpoints';
+import { waitForBundle, renderBundleForm } from './bundle';
+import type { BundleRenderFormOptions, VeribenimBundleApi, WaitForBundleOptions } from './bundle';
 import type {
   VeribenimConfig,
   VeribenimInternalConfig,
@@ -31,6 +35,7 @@ import type {
   ImpressionPixelOptions,
   TrackedEventHitPayload,
   IabVendorsResponse,
+  ConsentHistoryResponse,
 } from './types';
 
 export * from './types';
@@ -75,9 +80,39 @@ export {
   waitForTcfDecision,
 } from './tcf';
 export type { TcfData, TcfEventStatus, TcfPingReturn } from './tcf';
+// Adresler (On-Prem) — tek kaynak
+export { DEFAULT_ENDPOINTS, resolveEndpoints } from './endpoints';
+export type { VeribenimEndpoints } from './endpoints';
+// Sayfadaki bundle (window.veribenim) sarmalayıcıları
+export {
+  VERIBENIM_READY_EVENT,
+  DEFAULT_BUNDLE_TIMEOUT,
+  getBundle,
+  isBundleReady,
+  onBundleReady,
+  waitForBundle,
+  renderBundleForm,
+} from './bundle';
+export type {
+  VeribenimBundleApi,
+  BundleRenderFormOptions,
+  BundleFormSuccess,
+  WaitForBundleOptions,
+} from './bundle';
+// Birinci taraf rıza proxy'si — YALNIZCA sunucu tarafında kullanın
+export {
+  createConsentProxy,
+  consentCookieName,
+  isValidIp,
+  CONSENT_PROXY_BASE_PATH,
+  CONSENT_PROXY_MAX_BODY_BYTES,
+} from './consent-proxy';
+export type { ConsentProxyOptions, ConsentProxyHandler } from './consent-proxy';
 
 const DEFAULT_CONFIG: Omit<VeribenimInternalConfig, 'token'> = {
-  apiUrl: 'https://live.veribenim.com',
+  apiUrl: DEFAULT_ENDPOINTS.apiUrl,
+  bundleBaseUrl: DEFAULT_ENDPOINTS.bundleBaseUrl,
+  webUrl: DEFAULT_ENDPOINTS.webUrl,
   lang: 'tr',
   debug: false,
 };
@@ -101,13 +136,21 @@ export class Veribenim {
   constructor(config: VeribenimConfig, events?: VeribenimEvents) {
     if (!config.token) throw new Error('[Veribenim] token zorunludur');
 
+    // `_apiUrl` (eski) `endpoints.apiUrl`'den önceliklidir — geriye uyumluluk.
+    const endpoints = resolveEndpoints({
+      ...config.endpoints,
+      ...(config._apiUrl ? { apiUrl: config._apiUrl } : {}),
+    });
+
     this.config = {
       ...DEFAULT_CONFIG,
       token: config.token,
       domain: config.domain,
       lang: config.lang ?? 'tr',
       debug: config.debug ?? false,
-      apiUrl: config._apiUrl ?? 'https://live.veribenim.com',
+      apiUrl: endpoints.apiUrl,
+      bundleBaseUrl: endpoints.bundleBaseUrl,
+      webUrl: endpoints.webUrl,
       scriptUrl: config._scriptUrl,
       googleConsentMode: config.googleConsentMode ?? false,
     };
@@ -121,6 +164,41 @@ export class Veribenim {
     if (events?.onAccept) this.onAccept(events.onAccept);
     if (events?.onDecline) this.onDecline(events.onDecline);
     if (events?.onChange) this.onChange(events.onChange);
+  }
+
+  /** Etkin adresler (varsayılanlar + On-Prem geçersiz kılmaları). */
+  get endpoints(): VeribenimEndpoints {
+    return {
+      apiUrl: this.config.apiUrl,
+      bundleBaseUrl: this.config.bundleBaseUrl ?? DEFAULT_ENDPOINTS.bundleBaseUrl,
+      webUrl: this.config.webUrl ?? DEFAULT_ENDPOINTS.webUrl,
+    };
+  }
+
+  /**
+   * Sayfadaki bundle'ın (`window.veribenim`) hazır olmasını bekler
+   * (`VeribenimReady`). Bundle'ı yüklemez; `loadScript()` ile birlikte kullanın.
+   */
+  waitForBundle(options?: WaitForBundleOptions): Promise<VeribenimBundleApi> {
+    return waitForBundle(options);
+  }
+
+  /**
+   * Formu BUNDLE'ın renderForm'u ile çizer (konsoldaki "Formu Göm" koduyla
+   * aynı görünüm ve davranış). Bundle hazır değilse önce bekler.
+   *
+   * SDK'nın kendi çiziciyi kullanan `renderForm`'undan farkı: tema bundle'dan
+   * gelir, stil kapalı shadow root ile yalıtılır.
+   *
+   * @example
+   * await veribenim.renderBundleForm('iletisim', '#vb-form', { lang: 'tr' });
+   */
+  renderBundleForm(
+    slug: string,
+    target: string | Element,
+    options?: BundleRenderFormOptions & WaitForBundleOptions
+  ): Promise<unknown> {
+    return renderBundleForm(slug, target, options);
   }
 
   /**
@@ -200,6 +278,20 @@ export class Veribenim {
   }
 
   /**
+   * Rızayı geri çeker (KVKK Md.11/1-e). POST /api/preferences/{token}/withdraw
+   */
+  withdrawConsent(sessionId: string): Promise<boolean> {
+    return this.api.withdrawConsent(sessionId);
+  }
+
+  /**
+   * Ziyaretçinin rıza geçmişi. GET /api/preferences/{token}/history
+   */
+  getConsentHistory(sessionId: string): Promise<ConsentHistoryResponse | null> {
+    return this.api.getConsentHistory(sessionId);
+  }
+
+  /**
    * Belirtilen kategori için ziyaretçi izni var mı?
    * @param category - 'strictly_necessary' | 'functional' | 'analytics' | 'marketing'
    * @param sessionId - Opsiyonel session ID
@@ -231,8 +323,8 @@ export class Veribenim {
    * Form şemasını yükle
    * GET /api/public/forms/{token}/{slug}
    */
-  getFormSchema(slug: string): Promise<FormSchema> {
-    return this.api.getFormSchema(slug);
+  getFormSchema(slug: string, lang?: string): Promise<FormSchema> {
+    return this.api.getFormSchema(slug, lang);
   }
 
   /**

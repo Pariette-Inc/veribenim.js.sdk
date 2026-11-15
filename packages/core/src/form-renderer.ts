@@ -9,6 +9,7 @@ import type {
 } from './types';
 import { VeribenimApiClient } from './client';
 import { sanitizeHtml, escapeHtml } from './sanitize';
+import { DEFAULT_ENDPOINTS } from './endpoints';
 
 export class FormRenderer {
   private client: VeribenimApiClient;
@@ -18,6 +19,8 @@ export class FormRenderer {
   private currentStep: number = 0;
   private fieldValues: Record<string, any> = {};
   private styleId: string;
+  /** Rozet doğrulama bağlantısının tabanı (On-Prem'de panel adresi). */
+  private webUrl: string = DEFAULT_ENDPOINTS.webUrl;
 
   constructor(
     client: VeribenimApiClient,
@@ -44,6 +47,7 @@ export class FormRenderer {
     const client = new VeribenimApiClient(config);
     const schema = await client.getFormSchema(slug, options.lang);
     const renderer = new FormRenderer(client, schema, container, options);
+    renderer.webUrl = (config.webUrl || DEFAULT_ENDPOINTS.webUrl).replace(/\/+$/, '');
     renderer.mount();
   }
 
@@ -641,7 +645,7 @@ export class FormRenderer {
   private renderBadge(): HTMLElement {
     const company = this.schema.company || '';
     const domain = this.schema.domain || '';
-    const verifyUrl = domain ? `https://veribenim.com/verify/${domain}` : 'https://veribenim.com';
+    const verifyUrl = domain ? `${this.webUrl}/verify/${domain}` : this.webUrl;
 
     const companyText = company
       ? `<strong>${company}</strong> adına VeriBenim tarafından güvenle işlenmektedir. ${company}, kişisel verilerinizi hiçbir üçüncü tarafla paylaşamaz.`

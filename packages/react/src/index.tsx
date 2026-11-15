@@ -6,6 +6,8 @@ export { ConsentBanner } from './ConsentBanner';
 export type { ConsentBannerProps } from './ConsentBanner';
 export { VeribenimForm } from './VeribenimForm';
 export type { VeribenimFormProps } from './VeribenimForm';
+export { VeribenimBundleForm, useVeribenimReady } from './VeribenimBundleForm';
+export type { VeribenimBundleFormProps } from './VeribenimBundleForm';
 export {
   useVeribenim,
   useConsentCategory,
@@ -19,4 +21,7 @@ export type {
   ConsentPreferences,
   ConsentAction,
   PreferencesResponse,
+  VeribenimEndpoints,
+  VeribenimBundleApi,
+  BundleRenderFormOptions,
 } from '@veribenim/core';

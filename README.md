@@ -17,6 +17,7 @@ Veribenim, geliştiricilere KVKK ve GDPR standartlarını karşılayan, enterpri
 - [Neden Veribenim?](#neden-veribenim)
 - [Nasıl Kurulur?](#nasıl-kurulur)
 - [Paketler](#paketler)
+- [Form Gömme, Birinci Taraf Rıza Proxy'si ve On-Prem (Kasım 2026)](#form-gömme-birinci-taraf-rıza-proxysi-ve-on-prem-kasım-2026)
 - [Güvenlik Standartları](#güvenlik-standartları)
 - [Geliştirme](#geliştirme)
 - [Lisans](#lisans)
@@ -323,6 +324,12 @@ interface VeribenimConfig {
   domain?: string;  // Bundle script URL için site domain'i (örn: 'example.com')
   lang?: 'tr' | 'en' | 'de' | 'fr' | 'es' | 'bg' | 'ar'; // Varsayılan: 'tr'
   debug?: boolean;  // Varsayılan: false
+  // Adresler (yalnızca On-Prem'de). Varsayılanlar bugünkü bulut adresleri.
+  endpoints?: {
+    apiUrl?: string;        // https://live.veribenim.com
+    bundleBaseUrl?: string; // https://bundles.veribenim.com
+    webUrl?: string;        // https://veribenim.com
+  };
 }
 ```
 
@@ -356,8 +363,15 @@ await veribenim.logConsent(payload: ConsentLogPayload): Promise<boolean>
 // Form rıza takibi
 await veribenim.logFormConsent(payload: FormConsentPayload): Promise<FormConsentResponse | null>
 
-// Rızayı geri çekme (KVKK Md.11/1-e)
+// Rızayı geri çekme (KVKK Md.11/1-e) — POST /api/preferences/{token}/withdraw
 await veribenim.withdrawConsent(sessionId: string): Promise<boolean>
+
+// Ziyaretçinin rıza geçmişi — GET /api/preferences/{token}/history
+await veribenim.getConsentHistory(sessionId: string): Promise<ConsentHistoryResponse | null>
+
+// Sayfadaki bundle'ı bekle / formu bundle ile çiz
+await veribenim.waitForBundle({ timeout?: number }): Promise<VeribenimBundleApi>
+await veribenim.renderBundleForm(slug, '#hedef' | element, { lang, onSuccess, onError }): Promise<unknown>
 
 // DSAR (Data Subject Access Request)
 await veribenim.submitDsar(payload: DsarPayload): Promise<DsarResponse | null>
@@ -539,6 +553,106 @@ export default defineNuxtConfig({
 ```
 
 ---
+
+## Form Gömme, Birinci Taraf Rıza Proxy'si ve On-Prem (Kasım 2026)
+
+### Bundle ile form gömme: `renderBundleForm` ve `VeribenimReady`
+
+Sayfadaki bundle `window.veribenim.renderForm(slug, hedef, { lang, onSuccess, onError })`
+sunar ve hazır olduğunda `window` üzerinde `VeribenimReady` olayını atar
+(`window.veribenim.ready = true`). SDK bu ikisini tipli olarak sarar; bundle
+önce yüklendiyse olay kaçırılmaz:
+
+```typescript
+import { renderBundleForm, waitForBundle, onBundleReady } from '@veribenim/core';
+
+await renderBundleForm('iletisim', '#vb-form', {
+  lang: 'tr',
+  onSuccess: (cevap) => console.log(cevap.success_title),
+  onError: (hata) => console.error(hata),
+  timeout: 15000, // bundle'ı bekleme süresi (ms), 0 = süresiz
+});
+```
+
+Çerçeve bileşenleri (bundle'ı yüklemez; `VeribenimReady`'i bekler):
+
+```tsx
+// React / Next.js
+import { VeribenimBundleForm, useVeribenimReady } from '@veribenim/react'; // ya da '@veribenim/nextjs'
+<VeribenimBundleForm slug="iletisim" lang="tr" fallback={<p>Yükleniyor…</p>} />
+```
+
+```vue
+<!-- Vue / Nuxt (Nuxt'ta bileşen ve useVeribenimReady otomatik içe aktarılır) -->
+<VeribenimBundleForm slug="iletisim" lang="tr" @success="onOk" />
+```
+
+`VeribenimForm` (SDK'nın kendi çizicisi) aynen duruyor; `VeribenimBundleForm`
+konsoldaki "Formu Göm" koduyla birebir aynı görünümü verir.
+
+> Bölge/rejim yardımcısı eklenmedi: bundle çözdüğü rejimi (`kvkk`, `gdpr`…)
+> genel bir arayüzle sunmuyor (yalnızca iç değişken ve iç önbellek anahtarı).
+
+### Birinci taraf rıza proxy'si (Safari ITP)
+
+Konsolda proxy doğrulandığında bundle rıza kararını sitenizin kendi alan
+adındaki `/_vb/{token}/c` adresine gönderir; Veribenim'in yanıtladığı
+`vb_consent_*` çerezi sitenizin kendi çerezi olur ve Safari'nin 7 gün sınırına
+takılmaz. Next.js için hazır route handler:
+
+```typescript
+// app/%5Fvb/[...path]/route.ts   (App Router'da "_vb" klasörü özel sayılır → %5Fvb)
+import { createConsentProxyRoute } from '@veribenim/nextjs/proxy';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const { GET, POST } = createConsentProxyRoute();
+// .env (SUNUCU): VERIBENIM_TOKEN=..., VERIBENIM_PROXY_KEY=vbpk_...
+```
+
+Başka bir Fetch API ortamında (Node, Worker, Nitro) çekirdekteki
+`createConsentProxy({ token, proxyKey, clientIpHeader? })` aynı işi yapar.
+
+Güvenlik:
+- Anahtarı yalnızca sunucu ortam değişkeninde tutun. `NEXT_PUBLIC_VERIBENIM_PROXY_KEY`
+  tanımlıysa işleyici çalışmayı reddeder.
+- Yalnızca `POST /_vb/{token}/c` ve `GET /_vb/{token}/ping` iletilir; token
+  sizinkiyle birebir olmalı, başka her yol 404.
+- Cookie başlığı yalnızca sitenin `vb_consent_*` çerezine indirilir; oturum
+  çerezleriniz, `Authorization`, `X-Forwarded-For` Veribenim'e gitmez.
+- Yanıttan yalnızca `Content-Type`, `Cache-Control` ve rıza çerezinin
+  `Set-Cookie`'si (aynen) döner; yönlendirme izlenmez.
+- Ziyaretçi IP'si varsayılan olarak `x-forwarded-for`'un **en sağdaki** değeridir
+  (Vercel / önünüzdeki Nginx'in yazdığı). Cloudflare arkasında
+  `clientIpHeader: 'cf-connecting-ip'`; başka düzende `clientIp: (req) => ...` verin.
+
+### On-Prem: adresler tek yerden
+
+```typescript
+const veribenim = new Veribenim({
+  token: 'ENV_TOKEN',
+  domain: 'example.com',
+  endpoints: {
+    apiUrl: 'https://veribenim-api.kurum.local',
+    bundleBaseUrl: 'https://veribenim-cdn.kurum.local',
+    webUrl: 'https://veribenim.kurum.local',
+  },
+});
+```
+
+Varsayılanlar `DEFAULT_ENDPOINTS` içindedir ve bugünkü adreslerdir. Eski
+`_apiUrl` alanı çalışmaya devam eder (ve `endpoints.apiUrl`'den önceliklidir).
+
+### API ile hizalanan davranışlar
+
+- `logConsent` ve `savePreferences`: API `session_id`'yi zorunlu tutar;
+  verilmezse SDK istek atmaz (`false` / `null`).
+- `submitDsar`: API alanları `first_name`, `last_name`, `email`, `phone`,
+  `request_type`, `message`. Eski `full_name` (son kelime soyad) ve
+  `description` alanları çevrilerek gönderilir; `automated` →
+  `automated_decision`.
+- `submitForm`: dosya ve çoklu seçim alanları `alan[]` adıyla gider (API
+  dosya alanını dizi olarak doğrular).
 
 ## Yeni KVKK Özellikleri (Nisan 2026)
 

@@ -1,9 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { DEFAULT_ENDPOINTS } from '@veribenim/core';
 
 export interface VeribenimFormProps {
   token: string;
   slug: string;
+  /** API tabanı. Varsayılan DEFAULT_ENDPOINTS.apiUrl (https://live.veribenim.com). */
   apiUrl?: string;
+  /** Panel adresi (rozet bağlantısı). Varsayılan DEFAULT_ENDPOINTS.webUrl. */
+  webUrl?: string;
   debug?: boolean;
   theme?: {
     primaryColor?: string;
@@ -32,7 +36,8 @@ export interface VeribenimFormProps {
 export const VeribenimForm: React.FC<VeribenimFormProps> = ({
   token,
   slug,
-  apiUrl = 'https://live.veribenim.com',
+  apiUrl = DEFAULT_ENDPOINTS.apiUrl,
+  webUrl = DEFAULT_ENDPOINTS.webUrl,
   debug = false,
   theme,
   onSuccess,
@@ -68,6 +73,7 @@ export const VeribenimForm: React.FC<VeribenimFormProps> = ({
         const client = new VeribenimApiClient({
           token,
           apiUrl,
+          webUrl,
           debug,
           lang: locale || 'tr',
         } as any);
@@ -92,7 +98,7 @@ export const VeribenimForm: React.FC<VeribenimFormProps> = ({
         onError?.(err);
       }
     })();
-  }, [token, slug, apiUrl, debug, theme, onSuccess, onError, locale, lang, mounted]);
+  }, [token, slug, apiUrl, webUrl, debug, theme, onSuccess, onError, locale, lang, mounted]);
 
   if (!mounted) {
     return null; // Avoid hydration mismatch

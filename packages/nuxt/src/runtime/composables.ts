@@ -1,1 +1,1 @@
-export { useVeribenim } from '@veribenim/vue';
+export { useVeribenim, useVeribenimReady } from '@veribenim/vue';

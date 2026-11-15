@@ -10,11 +10,18 @@ import {
   type VeribenimVueState,
 } from './context';
 
-export type { VeribenimConfig, ConsentPreferences } from '@veribenim/core';
+export type {
+  VeribenimConfig,
+  ConsentPreferences,
+  VeribenimEndpoints,
+  VeribenimBundleApi,
+  BundleRenderFormOptions,
+} from '@veribenim/core';
 export { useVeribenim } from './context';
 export type { VeribenimVueState } from './context';
 export { ConsentBanner } from './ConsentBanner';
 export { VeribenimForm } from './VeribenimForm';
+export { VeribenimBundleForm, useVeribenimReady } from './VeribenimBundleForm';
 
 /** Geriye dönük uyumluluk için takma ad. */
 export type VeribenimPluginState = VeribenimVueState;
